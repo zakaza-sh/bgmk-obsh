@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Users, Star } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API } from '../context/AuthContext';
@@ -17,9 +18,16 @@ const BlockDetails = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [rating, setRating] = useState(null);
+  const [inspectionDate, setInspectionDate] = useState('');
 
   // Calculate block number in format XXX
   const blockNumber = parseInt(floor) * 100 + parseInt(block);
+
+  useEffect(() => {
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    setInspectionDate(today);
+  }, []);
 
   useEffect(() => {
     fetchBlockData();
@@ -51,6 +59,11 @@ const BlockDetails = () => {
       return;
     }
 
+    if (!inspectionDate) {
+      toast.error('Выберите дату проверки');
+      return;
+    }
+
     if (!token) {
       toast.error('Необходимо войти в систему для выставления оценок');
       navigate('/login');
@@ -64,7 +77,8 @@ const BlockDetails = () => {
           floor: parseInt(floor),
           block: parseInt(block),
           room_type: selectedRoom,
-          rating: rating
+          rating: rating,
+          inspection_date: inspectionDate
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -72,6 +86,9 @@ const BlockDetails = () => {
       toast.success('Оценка сохранена!');
       setSelectedRoom(null);
       setRating(null);
+      // Reset date to today
+      const today = new Date().toISOString().split('T')[0];
+      setInspectionDate(today);
       fetchBlockData();
     } catch (error) {
       console.error('Error submitting rating:', error);
@@ -200,24 +217,48 @@ const BlockDetails = () => {
               className="bg-card w-full rounded-t-3xl p-6 max-w-md mx-auto md:max-w-lg"
             >
               <h3 className="text-xl font-semibold mb-4">
-                Оцените комнату
+                Оценить комнату
               </h3>
               
-              <div className="flex gap-2 items-center justify-center py-4" data-testid="rating-selector">
-                {[1, 2, 3, 4, 5].map((num) => (
-                  <button
-                    key={num}
-                    onClick={() => setRating(num)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all ${
-                      rating === num
-                        ? 'bg-primary text-primary-foreground border-primary scale-110'
-                        : 'bg-white text-muted-foreground border-border hover:border-primary/50'
-                    }`}
-                    data-testid={`rating-${num}`}
-                  >
-                    {num}
-                  </button>
-                ))}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Дата проверки
+                  </label>
+                  <Input
+                    type="date"
+                    value={inspectionDate}
+                    onChange={(e) => setInspectionDate(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="w-full"
+                    data-testid="inspection-date-input"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Можно выбрать дату проверки (не позднее сегодня)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">
+                    Оценка
+                  </label>
+                  <div className="flex gap-2 items-center justify-center py-2" data-testid="rating-selector">
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <button
+                        key={num}
+                        onClick={() => setRating(num)}
+                        className={`w-10 h-10 rounded-full flex items-center justify-center border transition-all ${
+                          rating === num
+                            ? 'bg-primary text-primary-foreground border-primary scale-110'
+                            : 'bg-white text-muted-foreground border-border hover:border-primary/50'
+                        }`}
+                        data-testid={`rating-${num}`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-3 mt-6">

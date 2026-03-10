@@ -129,6 +129,7 @@ class InspectionCreate(BaseModel):
     room_type: str
     rating: int
     notes: Optional[str] = None
+    inspection_date: Optional[str] = None  # ISO date string YYYY-MM-DD
 
 
 class TransportSchedule(BaseModel):
@@ -354,10 +355,30 @@ async def create_inspection(
         if inspection_data.floor != user.get('floor_number'):
             raise HTTPException(status_code=403, detail="Can only inspect your assigned floor")
     
+    # Use provided date or current date
+    inspection_date = datetime.now(timezone.utc)
+    if inspection_data.inspection_date:
+        try:
+            # Parse provided date and set time to current time
+            date_obj = datetime.fromisoformat(inspection_data.inspection_date)
+            # Combine date with current time
+            inspection_date = datetime.combine(
+                date_obj.date(),
+                datetime.now(timezone.utc).time()
+            ).replace(tzinfo=timezone.utc)
+        except Exception as e:
+            logger.error(f"Error parsing inspection_date: {e}")
+            # Fall back to current date if parsing fails
+    
     inspection = Inspection(
-        **inspection_data.model_dump(),
+        floor=inspection_data.floor,
+        block=inspection_data.block,
+        room_type=inspection_data.room_type,
+        rating=inspection_data.rating,
+        notes=inspection_data.notes,
         inspector_id=user['id'],
-        inspector_name=user['username']
+        inspector_name=user['username'],
+        inspection_date=inspection_date
     )
     
     doc = inspection.model_dump()
