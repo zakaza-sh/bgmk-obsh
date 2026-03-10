@@ -32,81 +32,27 @@ const FloorsList = () => {
       <div className="max-w-md mx-auto min-h-screen shadow-2xl md:max-w-lg md:border-x md:border-border relative">
         {/* Header */}
         <div className="bg-card border-b border-border p-6 sticky top-0 z-10">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-display font-semibold tracking-tight">
-                  Санитарный контроль
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                  {user ? (
-                    `${user.username} (${user.role === 'admin' ? 'Админ' : `Этаж ${user.floor_number}`})`
-                  ) : (
-                    'Выберите этаж для просмотра'
-                  )}
-                </p>
-              </div>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-primary" />
             </div>
-            {user ? (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleLogout}
-                className="rounded-xl"
-                data-testid="logout-button"
-              >
-                <LogOut className="w-5 h-5" />
-              </Button>
-            ) : (
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate('/login')}
-                className="rounded-xl"
-                data-testid="login-button"
-              >
-                <LogIn className="w-5 h-5" />
-              </Button>
-            )}
+            <div>
+              <h1 className="text-2xl font-display font-semibold tracking-tight">
+                Санитарный контроль
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {user ? (
+                  `${user.username} (${user.role === 'admin' ? 'Админ' : `Этаж ${user.floor_number}`})`
+                ) : (
+                  'Выберите этаж для просмотра'
+                )}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Login for managers - only show if not logged in */}
-          {!user && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-2xl p-6 border border-primary/20"
-            >
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Shield className="w-6 h-6 text-primary" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg mb-1">
-                    Вход для старост и администрации
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Войдите для выставления оценок и управления данными
-                  </p>
-                  <Button
-                    onClick={() => navigate('/login')}
-                    className="rounded-xl"
-                    data-testid="manager-login-button"
-                  >
-                    <LogIn className="w-4 h-4 mr-2" />
-                    Войти
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
           {/* Admin panel button - only for admin */}
           {user?.role === 'admin' && (
             <Button
@@ -168,15 +114,33 @@ const FloorsList = () => {
             Расписание транспорта
           </Button>
 
-          {/* Info card */}
-          <div className="bg-muted/50 rounded-2xl p-4 text-sm text-muted-foreground">
-            <p className="mb-2">
-              <strong>Для всех проживающих:</strong> Просматривайте оценки комнат и информацию о блоках
-            </p>
-            <p>
-              <strong>Для старост:</strong> Войдите для выставления оценок своего этажа
-            </p>
-          </div>
+          {/* Manager login - subtle button at bottom */}
+          {!user && (
+            <Button
+              onClick={() => navigate('/login')}
+              className="w-full rounded-xl"
+              variant="ghost"
+              size="sm"
+              data-testid="manager-login-button"
+            >
+              <Shield className="w-4 h-4 mr-2" />
+              Вход для старост
+            </Button>
+          )}
+
+          {/* Logout button for logged in users */}
+          {user && (
+            <Button
+              onClick={handleLogout}
+              className="w-full rounded-xl"
+              variant="ghost"
+              size="sm"
+              data-testid="logout-button"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Выйти
+            </Button>
+          )}
         </div>
       </div>
     </div>
