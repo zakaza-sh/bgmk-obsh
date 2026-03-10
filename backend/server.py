@@ -275,8 +275,7 @@ async def create_resident(resident_data: ResidentCreate, user: dict = Depends(ge
 async def get_residents(
     floor: Optional[int] = None,
     block: Optional[int] = None,
-    search: Optional[str] = None,
-    user: dict = Depends(get_current_user)
+    search: Optional[str] = None
 ):
     query = {}
     if floor:
@@ -354,15 +353,11 @@ async def get_inspections(
     floor: Optional[int] = None,
     block: Optional[int] = None,
     start_date: Optional[str] = None,
-    end_date: Optional[str] = None,
-    user: dict = Depends(get_current_user)
+    end_date: Optional[str] = None
 ):
     query = {}
     
-    # Floor managers can only see their floor
-    if user['role'] == 'floor_manager':
-        query['floor'] = user.get('floor_number')
-    elif floor:
+    if floor:
         query['floor'] = floor
     
     if block:
@@ -386,7 +381,7 @@ async def get_inspections(
 
 
 @api_router.get("/blocks/{floor}/{block}", response_model=BlockInfo)
-async def get_block_info(floor: int, block: int, user: dict = Depends(get_current_user)):
+async def get_block_info(floor: int, block: int):
     # Get residents
     residents = await db.residents.find({"floor": floor, "block": block}, {"_id": 0}).to_list(100)
     for r in residents:

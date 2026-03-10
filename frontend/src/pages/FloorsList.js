@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Building2, LogOut } from 'lucide-react';
+import { Building2, LogOut, LogIn, Shield } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { useAuth } from '../context/AuthContext';
 import { toast } from 'sonner';
@@ -39,27 +39,75 @@ const FloorsList = () => {
               </div>
               <div>
                 <h1 className="text-2xl font-display font-semibold tracking-tight">
-                  Выбор этажа
+                  Санитарный контроль
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {user?.username} ({user?.role === 'admin' ? 'Админ' : `Этаж ${user?.floor_number}`})
+                  {user ? (
+                    `${user.username} (${user.role === 'admin' ? 'Админ' : `Этаж ${user.floor_number}`})`
+                  ) : (
+                    'Выберите этаж для просмотра'
+                  )}
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={handleLogout}
-              className="rounded-xl"
-              data-testid="logout-button"
-            >
-              <LogOut className="w-5 h-5" />
-            </Button>
+            {user ? (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleLogout}
+                className="rounded-xl"
+                data-testid="logout-button"
+              >
+                <LogOut className="w-5 h-5" />
+              </Button>
+            ) : (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/login')}
+                className="rounded-xl"
+                data-testid="login-button"
+              >
+                <LogIn className="w-5 h-5" />
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-8">
+        <div className="p-6 space-y-6">
+          {/* Login for managers - only show if not logged in */}
+          {!user && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gradient-to-r from-primary/5 to-primary/10 rounded-2xl p-6 border border-primary/20"
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Shield className="w-6 h-6 text-primary" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-lg mb-1">
+                    Вход для старост и администрации
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Войдите для выставления оценок и управления данными
+                  </p>
+                  <Button
+                    onClick={() => navigate('/login')}
+                    className="rounded-xl"
+                    data-testid="manager-login-button"
+                  >
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Войти
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Admin panel button - only for admin */}
           {user?.role === 'admin' && (
             <Button
               onClick={() => navigate('/admin')}
@@ -67,12 +115,14 @@ const FloorsList = () => {
               variant="outline"
               data-testid="admin-panel-button"
             >
+              <Shield className="w-4 h-4 mr-2" />
               Админ-панель
             </Button>
           )}
 
+          {/* Floors */}
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-muted-foreground">Этажи</h2>
+            <h2 className="text-lg font-medium text-muted-foreground">Этажи общежития</h2>
             <div className="grid grid-cols-2 gap-4">
               {floors.map((floor) => (
                 <motion.div
@@ -108,6 +158,7 @@ const FloorsList = () => {
             </div>
           </div>
 
+          {/* Transport button */}
           <Button
             onClick={() => navigate('/transport')}
             className="w-full h-14 text-base rounded-2xl"
@@ -116,6 +167,16 @@ const FloorsList = () => {
           >
             Расписание транспорта
           </Button>
+
+          {/* Info card */}
+          <div className="bg-muted/50 rounded-2xl p-4 text-sm text-muted-foreground">
+            <p className="mb-2">
+              <strong>Для всех проживающих:</strong> Просматривайте оценки комнат и информацию о блоках
+            </p>
+            <p>
+              <strong>Для старост:</strong> Войдите для выставления оценок своего этажа
+            </p>
+          </div>
         </div>
       </div>
     </div>

@@ -12,8 +12,8 @@ import BlockDetails from "./pages/BlockDetails";
 import Transport from "./pages/Transport";
 import Admin from "./pages/Admin";
 
-// Protected Route Component
-const ProtectedRoute = ({ children }) => {
+// Protected Route Component - only for admin pages
+const AdminRoute = ({ children }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -24,8 +24,8 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
+  if (!user || user.role !== 'admin') {
+    return <Navigate to="/" replace />;
   }
 
   return children;
@@ -36,48 +36,17 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route
-        path="/login"
-        element={user ? <Navigate to="/" replace /> : <Login />}
-      />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <FloorsList />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/floor/:floor"
-        element={
-          <ProtectedRoute>
-            <BlocksList />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/floor/:floor/block/:block"
-        element={
-          <ProtectedRoute>
-            <BlockDetails />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/transport"
-        element={
-          <ProtectedRoute>
-            <Transport />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/login" element={<Login />} />
+      <Route path="/" element={<FloorsList />} />
+      <Route path="/floor/:floor" element={<BlocksList />} />
+      <Route path="/floor/:floor/block/:block" element={<BlockDetails />} />
+      <Route path="/transport" element={<Transport />} />
       <Route
         path="/admin"
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <Admin />
-          </ProtectedRoute>
+          </AdminRoute>
         }
       />
     </Routes>

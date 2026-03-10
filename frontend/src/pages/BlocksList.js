@@ -26,9 +26,7 @@ const BlocksList = () => {
       setLoading(true);
       // Fetch data for all 15 blocks
       const blockPromises = Array.from({ length: 15 }, (_, i) => 
-        axios.get(`${API}/blocks/${floor}/${i + 1}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }).catch(() => null)
+        axios.get(`${API}/blocks/${floor}/${i + 1}`).catch(() => null)
       );
       
       const results = await Promise.all(blockPromises);

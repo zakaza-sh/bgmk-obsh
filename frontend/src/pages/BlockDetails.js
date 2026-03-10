@@ -25,9 +25,7 @@ const BlockDetails = () => {
   const fetchBlockData = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API}/blocks/${floor}/${block}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get(`${API}/blocks/${floor}/${block}`);
       setBlockData(response.data);
     } catch (error) {
       console.error('Error fetching block:', error);
@@ -47,6 +45,12 @@ const BlockDetails = () => {
   const handleRatingSubmit = async () => {
     if (!rating || rating < 1 || rating > 5) {
       toast.error('Выберите оценку от 1 до 5');
+      return;
+    }
+
+    if (!token) {
+      toast.error('Необходимо войти в систему для выставления оценок');
+      navigate('/login');
       return;
     }
 

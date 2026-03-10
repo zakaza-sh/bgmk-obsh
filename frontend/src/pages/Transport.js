@@ -28,9 +28,7 @@ const Transport = () => {
 
   const fetchSchedules = async () => {
     try {
-      const response = await axios.get(`${API}/transport`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await axios.get(`${API}/transport`);
       setSchedules(response.data);
       setLoading(false);
     } catch (error) {
