@@ -136,7 +136,7 @@ const Transport = () => {
                             {schedule.route_number}
                           </h3>
                           <span className="text-sm text-muted-foreground">
-                            Автобус
+                            {schedule.vehicle_type === 'bus' ? 'Автобус' : 'Троллейбус'}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">

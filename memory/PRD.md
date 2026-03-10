@@ -1,13 +1,13 @@
 # Telegram Web App - Санитарный Контроль Общежития
 
 ## Описание проекта
-Веб-приложение для мониторинга и управления санитарным состоянием комнат в общежитии. Интегрируется с Telegram.
+Веб-приложение для мониторинга и управления санитарным состоянием комнат в общежитии. Интегрировано с Telegram как Mini App.
 
 ## Основные требования
 - Охват этажей: 2-9 (8 этажей)
 - На каждом этаже: 15 блоков
 - В каждом блоке: Маленькая комната, Большая комната, Общее пространство
-- Система оценок: 1-5 (1-3 = проблемные комнаты, выделены красным)
+- Система оценок: 1-5 (1-2 = проблемные комнаты, выделены красным)
 - Роли: Администратор, Старосты этажей (по одному на этаж)
 - Публичный доступ для просмотра (без авторизации)
 
@@ -21,7 +21,7 @@
 ├── frontend/
 │   ├── src/
 │   │   ├── pages/      # LoginPage, FloorsList, BlocksList, BlockDetails, Admin, Transport
-│   │   ├── context/    # AuthContext
+│   │   ├── context/    # AuthContext, TelegramContext
 │   │   └── components/ # UI компоненты (Shadcn/UI)
 │   └── .env
 └── memory/
@@ -39,9 +39,12 @@
 - `GET /api/blocks/{floor}/{block}` - Информация о блоке
 - `POST /api/inspections` - Создание оценки
 - `GET /api/inspections` - Список проверок (с фильтрами)
+- `GET /api/residents?search=` - Поиск жителей
 - `GET /api/admin/users` - Список пользователей
 - `GET /api/admin/export/pdf` - Экспорт отчёта в PDF
-- `GET /api/transport` - Расписание транспорта
+- `GET /api/transport` - Расписание транспорта (с Yandex API fallback)
+- `GET /api/telegram/bot-info` - Информация о боте
+- `POST /api/telegram/webhook` - Webhook для Telegram
 
 ## Реализованные функции
 
@@ -57,22 +60,27 @@
 - [x] Режим быстрой оценки всех комнат (batch mode - "Оценить всё")
 - [x] Экспорт отчётов в PDF
 - [x] Просмотр истории входов в админ-панели
-- [x] Расписание транспорта (Дом правосудия, Минск)
 - [x] Красный цвет только для оценок 1-2 (не 1-3)
+- [x] Глобальный поиск по номеру блока/ФИО жильца
+- [x] Telegram Bot интеграция (@obshbsmc_bot)
+  - Команды: /start, /help, /status
+  - Telegram Web App support
+  - Webhook настроен
+- [x] Yandex Maps API для транспорта (с fallback на симуляцию)
+- [x] Расписание автобусов и троллейбусов (Дом правосудия, Минск)
 
 ## Ожидающие задачи
 
-### P2 - Средний приоритет
-- [ ] Поиск по дате/номеру блока/имени жильца
-
 ### P3 - Будущие задачи
-- [ ] Интеграция с Telegram Bot API
-- [ ] Интеграция Yandex Maps API для live-данных транспорта
 - [ ] Деплой на Contabo VPS + Duck DNS
 
 ## Учётные данные
 - **Админ**: admin / admin123
-- **Старосты**: starosta-{2-9} / floor{2-9}pass (создаются при необходимости)
+- **Telegram Bot**: @obshbsmc_bot
+
+## Интеграции
+- **Telegram Bot Token**: 8435342350:AAHpzv8g1lg42yYM_OpiF1xHlaY8Hk7lpmQ
+- **Yandex Maps API Key**: c6d6dc12-3699-4309-9fe1-b5173399116d
 
 ## Тестирование
 - Backend: `/app/backend/tests/test_sanitary_control.py`

@@ -461,66 +461,149 @@ async def get_block_info(floor: int, block: int):
 
 # ==================== TRANSPORT ROUTES ====================
 
+# Cache for Yandex transport data
+transport_cache = {
+    "data": None,
+    "timestamp": None,
+    "ttl": 60  # Cache for 60 seconds
+}
+
 @api_router.get("/transport", response_model=List[TransportSchedule])
 async def get_transport_schedule():
-    # Real data for "Дом правосудия" stop in Minsk
-    # Routes: 103, 57, 38, 32С
+    """Get transport schedule for 'Дом правосудия' stop in Minsk"""
     current_time = datetime.now()
     
-    # Generate realistic schedule based on time of day
+    # Check cache
+    if (transport_cache["data"] and transport_cache["timestamp"] and 
+        (current_time - transport_cache["timestamp"]).seconds < transport_cache["ttl"]):
+        return transport_cache["data"]
+    
+    # Try to get live data from Yandex
+    if YANDEX_API_KEY:
+        try:
+            live_data = await get_yandex_transport_data()
+            if live_data:
+                transport_cache["data"] = live_data
+                transport_cache["timestamp"] = current_time
+                return live_data
+        except Exception as e:
+            logger.error(f"Yandex transport API error: {e}")
+    
+    # Fallback to simulated data
+    return get_simulated_transport_schedule()
+
+
+async def get_yandex_transport_data():
+    """Fetch real-time transport data from Yandex Masstransit API"""
+    # Coordinates for "Дом правосудия" stop in Minsk
+    lat = 53.8684
+    lon = 27.4833
+    
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            # Yandex Masstransit Info API
+            response = await client.get(
+                "https://api.routing.yandex.net/v2/masstransit/info",
+                params={
+                    "apikey": YANDEX_API_KEY,
+                    "ll": f"{lon},{lat}",
+                    "lang": "ru_RU"
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                return parse_yandex_response(data)
+            else:
+                logger.warning(f"Yandex API returned status {response.status_code}")
+                
+    except httpx.TimeoutException:
+        logger.warning("Yandex API timeout")
+    except Exception as e:
+        logger.error(f"Yandex API error: {e}")
+    
+    return None
+
+
+def parse_yandex_response(data):
+    """Parse Yandex Masstransit API response"""
+    schedules = []
+    current_time = datetime.now()
+    
+    try:
+        stops = data.get("stops", [])
+        
+        for stop in stops[:10]:
+            threads = stop.get("threads", [])
+            
+            for thread in threads[:5]:
+                route_name = thread.get("name", "")
+                vehicle_type = thread.get("type", "bus")
+                
+                eta = thread.get("eta", {})
+                minutes_until = eta.get("minutes", 0)
+                
+                if minutes_until > 0:
+                    arrival_time = current_time + timedelta(minutes=minutes_until)
+                    
+                    schedules.append(TransportSchedule(
+                        vehicle_type=vehicle_type,
+                        route_number=route_name,
+                        arrival_time=arrival_time.strftime("%H:%M"),
+                        minutes_until=minutes_until,
+                        urgent=minutes_until <= 5
+                    ))
+        
+        schedules.sort(key=lambda x: x.minutes_until)
+        return schedules[:8]
+        
+    except Exception as e:
+        logger.error(f"Error parsing Yandex response: {e}")
+        return None
+
+
+def get_simulated_transport_schedule():
+    """Generate simulated transport schedule based on real routes"""
+    import random
+    current_time = datetime.now()
     hour = current_time.hour
     
-    # Base intervals (minutes between buses)
-    base_intervals = {
-        "103": 12,  # ДС Малиновка-4 — ДС Юго-Запад
-        "57": 15,   # Семашко — ДС Восточная
-        "38": 18,   # Автостанция «Юго-Западная» — Академика Карского, 44
-        "32С": 20   # Express route
-    }
+    routes = [
+        ("103", "bus", "ДС Малиновка-4 — ДС Юго-Запад"),
+        ("57", "bus", "Семашко — ДС Восточная"),
+        ("38", "bus", "Автостанция Юго-Западная"),
+        ("32С", "bus", "Экспресс"),
+        ("53", "trolleybus", "Пл. Бангалор — ДС Серова"),
+        ("29", "trolleybus", "Вокзал — Курасовщина")
+    ]
     
-    # Adjust for time of day (rush hour = more frequent)
-    if 7 <= hour <= 9 or 17 <= hour <= 19:  # Rush hour
+    base_intervals = {"103": 12, "57": 15, "38": 18, "32С": 20, "53": 10, "29": 12}
+    
+    if 7 <= hour <= 9 or 17 <= hour <= 19:
         multiplier = 0.7
-    elif 22 <= hour or hour <= 6:  # Night
+    elif 22 <= hour or hour <= 6:
         multiplier = 2.0
-    else:  # Normal time
+    else:
         multiplier = 1.0
     
     schedules = []
     
-    # Generate schedule for each route
-    import random
-    routes = [
-        ("103", "ДС Малиновка-4 — ДС Юго-Запад"),
-        ("57", "Семашко — ДС Восточная"),
-        ("38", "Автостанция Юго-Западная"),
-        ("32С", "Экспресс")
-    ]
-    
-    for route_num, route_name in routes:
-        # Calculate next arrival
-        base_interval = base_intervals[route_num]
+    for route_num, vehicle_type, route_name in routes:
+        base_interval = base_intervals.get(route_num, 15)
         interval = int(base_interval * multiplier)
-        
-        # Add some randomness (±2 minutes)
-        minutes_until = random.randint(max(1, interval - 2), interval + 2)
-        
-        # Mark as urgent if less than 5 minutes
-        is_urgent = minutes_until <= 5
+        minutes_until = random.randint(max(1, interval - 3), interval + 3)
         
         arrival_time = current_time + timedelta(minutes=minutes_until)
         
         schedules.append(TransportSchedule(
-            vehicle_type="bus",
+            vehicle_type=vehicle_type,
             route_number=route_num,
             arrival_time=arrival_time.strftime("%H:%M"),
             minutes_until=minutes_until,
-            urgent=is_urgent
+            urgent=minutes_until <= 5
         ))
     
-    # Sort by arrival time
     schedules.sort(key=lambda x: x.minutes_until)
-    
     return schedules
 
 
