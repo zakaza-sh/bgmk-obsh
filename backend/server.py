@@ -271,6 +271,25 @@ async def create_resident(resident_data: ResidentCreate, user: dict = Depends(ge
     return resident
 
 
+@api_router.post("/residents/batch")
+async def create_residents_batch(residents_data: List[ResidentCreate], admin: dict = Depends(require_admin)):
+    """Batch upload residents for admin only"""
+    inserted_count = 0
+    
+    for resident_data in residents_data:
+        resident = Resident(**resident_data.model_dump())
+        doc = resident.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        
+        try:
+            await db.residents.insert_one(doc)
+            inserted_count += 1
+        except Exception as e:
+            logger.error(f"Error inserting resident: {e}")
+    
+    return {"inserted": inserted_count, "total": len(residents_data)}
+
+
 @api_router.get("/residents", response_model=List[Resident])
 async def get_residents(
     floor: Optional[int] = None,

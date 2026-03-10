@@ -27,7 +27,7 @@ import { toast } from 'sonner';
 
 const Admin = () => {
   const navigate = useNavigate();
-  const { token, user } = useAuth();
+  const { token, user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('residents');
   const [residents, setResidents] = useState([]);
   const [users, setUsers] = useState([]);
@@ -226,7 +226,7 @@ const Admin = () => {
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-3xl font-display font-semibold tracking-tight">
               Админ-панель
             </h1>
@@ -234,6 +234,18 @@ const Admin = () => {
               Управление системой
             </p>
           </div>
+          <Button
+            variant="outline"
+            onClick={() => {
+              logout();
+              navigate('/');
+            }}
+            className="rounded-xl"
+            data-testid="admin-logout-button"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Выйти
+          </Button>
         </div>
 
         {/* Tabs */}
@@ -264,6 +276,15 @@ const Admin = () => {
           >
             <Download className="w-4 h-4 mr-2" />
             Экспорт
+          </Button>
+          <Button
+            variant={activeTab === 'activity' ? 'default' : 'outline'}
+            onClick={() => setActiveTab('activity')}
+            className="rounded-xl whitespace-nowrap"
+            data-testid="tab-activity"
+          >
+            <Eye className="w-4 h-4 mr-2" />
+            Активность
           </Button>
         </div>
 
@@ -565,6 +586,52 @@ const Admin = () => {
               </Button>
             </div>
           </Card>
+        )}
+
+        {/* Activity Tab */}
+        {activeTab === 'activity' && (
+          <div className="space-y-4">
+            <Card className="p-6 rounded-2xl">
+              <h2 className="text-xl font-semibold mb-6">Активность пользователей</h2>
+              
+              <div className="space-y-2">
+                {users.filter(u => u.role === 'floor_manager').map((u) => (
+                  <Card key={u.id} className="p-4 rounded-xl bg-muted/30">
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <h3 className="font-medium">{u.username}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Этаж {u.floor_number}
+                        </p>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleViewActivity(u.id)}
+                        data-testid={`view-activity-detail-${u.id}`}
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        Подробнее
+                      </Button>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Последний вход: {u.last_login ? new Date(u.last_login).toLocaleString('ru-RU') : 'Никогда'}
+                    </div>
+                    {u.login_history && u.login_history.length > 0 && (
+                      <div className="mt-2 pt-2 border-t border-border">
+                        <p className="text-xs font-medium mb-1">Последние 5 входов:</p>
+                        {u.login_history.slice(-5).reverse().map((h, i) => (
+                          <div key={i} className="text-xs text-muted-foreground">
+                            • {new Date(h.timestamp).toLocaleString('ru-RU')} - {h.ip}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </Card>
+                ))}
+              </div>
+            </Card>
+          </div>
         )}
       </div>
     </div>
