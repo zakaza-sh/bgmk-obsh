@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { LogIn, Lock, User } from 'lucide-react';
 import { toast } from 'sonner';
+import axios from 'axios';
+import { API } from '../context/AuthContext';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,6 +25,23 @@ const Login = () => {
     
     if (result.success) {
       toast.success('Успешный вход!');
+      
+      // Redirect based on user role
+      // Get user info from result or fetch it
+      const response = await axios.get(`${API}/auth/me`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      
+      const userData = response.data;
+      
+      // Redirect floor managers directly to their floor
+      if (userData.role === 'floor_manager' && userData.floor_number) {
+        navigate(`/floor/${userData.floor_number}`);
+      } else if (userData.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } else {
       toast.error(result.error);
     }

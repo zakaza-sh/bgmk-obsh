@@ -101,14 +101,14 @@ const blockNumber = parseInt(floor) * 100 + parseInt(block);
 
 ```bash
 # Транспорт
-curl https://room-audit-bot.preview.emergentagent.com/api/transport
+curl https://room-ratings.preview.emergentagent.com/api/transport
 # Результат: 4 маршрута (103, 57, 38, 32С)
 
 # Блок с новой нумерацией
-curl https://room-audit-bot.preview.emergentagent.com/api/blocks/2/1
+curl https://room-ratings.preview.emergentagent.com/api/blocks/2/1
 # floor: 2, block: 1 → отображается как блок 201
 
-curl https://room-audit-bot.preview.emergentagent.com/api/blocks/3/5
+curl https://room-ratings.preview.emergentagent.com/api/blocks/3/5
 # floor: 3, block: 5 → отображается как блок 305
 ```
 
