@@ -1,0 +1,132 @@
+{
+  "design_system": {
+    "name": "SanitaryControl_v1",
+    "theme": "light",
+    "typography": {
+      "font_family": {
+        "heading": "Clash Display, sans-serif",
+        "body": "Manrope, sans-serif",
+        "mono": "JetBrains Mono, monospace"
+      },
+      "imports": [
+        "https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap",
+        "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap"
+      ],
+      "scale": {
+        "h1": "text-4xl font-semibold tracking-tight",
+        "h2": "text-3xl font-semibold tracking-tight",
+        "h3": "text-2xl font-medium tracking-tight",
+        "body": "text-base font-normal leading-relaxed",
+        "small": "text-sm font-medium text-muted-foreground"
+      }
+    },
+    "colors": {
+      "background": "#F8FAFC",
+      "foreground": "#0F172A",
+      "card": "#FFFFFF",
+      "card_foreground": "#0F172A",
+      "primary": "#0F172A",
+      "primary_foreground": "#F8FAFC",
+      "secondary": "#F1F5F9",
+      "secondary_foreground": "#0F172A",
+      "muted": "#F1F5F9",
+      "muted_foreground": "#64748B",
+      "accent": "#F1F5F9",
+      "accent_foreground": "#0F172A",
+      "destructive": "#EF4444",
+      "destructive_foreground": "#F8FAFC",
+      "border": "#E2E8F0",
+      "input": "#E2E8F0",
+      "ring": "#0F172A",
+      "semantic": {
+        "good": "#10B981",
+        "warning": "#F59E0B",
+        "bad": "#EF4444",
+        "info": "#3B82F6"
+      }
+    },
+    "radius": "0.75rem",
+    "shadows": {
+      "sm": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+      "md": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+      "lg": "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+      "xl": "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
+    }
+  },
+  "layout_strategies": {
+    "container": "max-w-md mx-auto min-h-screen bg-background overflow-hidden relative shadow-2xl md:max-w-lg md:border-x md:border-border",
+    "page_padding": "p-6 md:p-8",
+    "section_spacing": "space-y-8",
+    "grid_system": {
+      "floors": "grid grid-cols-2 gap-4",
+      "blocks": "grid grid-cols-3 gap-3",
+      "rooms": "flex flex-col space-y-4"
+    }
+  },
+  "components": {
+    "FloorCard": {
+      "description": "Card representing a floor (2-9)",
+      "styles": "aspect-square flex items-center justify-center rounded-2xl bg-white border border-border shadow-sm hover:shadow-md transition-all cursor-pointer text-2xl font-bold hover:bg-slate-50",
+      "active_styles": "ring-2 ring-primary border-transparent"
+    },
+    "BlockCard": {
+      "description": "Small card representing a block (1-15)",
+      "styles": "aspect-[4/3] flex flex-col items-center justify-center rounded-xl bg-white border border-border shadow-sm hover:border-primary/20 transition-all cursor-pointer",
+      "rating_indicator": "w-2 h-2 rounded-full absolute top-2 right-2"
+    },
+    "RoomRating": {
+      "description": "Interactive rating component (1-5)",
+      "styles": "flex gap-2 items-center justify-center py-4",
+      "item_styles": "w-10 h-10 rounded-full flex items-center justify-center border transition-all cursor-pointer",
+      "selected_styles": "bg-primary text-primary-foreground border-primary scale-110",
+      "unselected_styles": "bg-white text-muted-foreground border-border hover:border-primary/50"
+    },
+    "TransportWidget": {
+      "description": "Card showing bus/trolley schedule",
+      "styles": "bg-white rounded-2xl p-6 border border-border shadow-sm",
+      "time_styles": "text-4xl font-bold tracking-tighter tabular-nums",
+      "badge_styles": "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+    }
+  },
+  "image_assets": {
+    "login_hero": "https://images.unsplash.com/photo-1769541607705-3b3c5095679b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMjh8MHwxfHNlYXJjaHwxfHxhYnN0cmFjdCUyMGNsZWFuJTIwM2QlMjB3aGl0ZSUyMGdlb21ldHJpYyUyMHNoYXBlcyUyMG1pbmltYWx8ZW58MHx8fHwxNzczMTQ4ODgxfDA&ixlib=rb-4.1.0&q=85",
+    "icons": {
+      "bus": "bus-front",
+      "trolley": "tram-front",
+      "warning": "alert-triangle",
+      "check": "check-circle-2"
+    }
+  },
+  "motion": {
+    "page_transition": {
+      "initial": { "opacity": 0, "y": 20 },
+      "animate": { "opacity": 1, "y": 0 },
+      "exit": { "opacity": 0, "y": -20 },
+      "transition": { "duration": 0.3, "ease": "easeOut" }
+    },
+    "hover": {
+      "scale": 1.02,
+      "transition": { "duration": 0.2 }
+    }
+  },
+  "instructions_to_main_agent": [
+    "1. Setup: Install 'lucide-react', 'jspdf', 'jspdf-autotable', 'framer-motion', 'clsx', 'tailwind-merge', 'sonner', 'date-fns'.",
+    "2. Typography: Add the font imports to index.css immediately. Configure tailwind.config.js to use 'Clash Display' for headings and 'Manrope' for body.",
+    "3. Layout: The app is a Telegram Web App. Wrap the main content in a container with 'max-w-md mx-auto' to simulate mobile view on desktop and constrain width.",
+    "4. Navigation: Implement a custom TabBar or BottomSheet for navigation if needed, but primarily use a stack-based navigation (Floor -> Block -> Room).",
+    "5. State Management: Use React Context or Zustand for holding the current 'floor', 'block', and 'user' state.",
+    "6. Admin Panel: Create a separate route '/admin' protected by a PIN or password. Use a table component for the student list.",
+    "7. PDF Export: Implement 'jspdf-autotable' in the Admin panel to export inspection logs.",
+    "8. Transport: Mock the API for now, or use a placeholder list with real-time countdown logic.",
+    "9. Theme: Enforce the 'light' theme variables in index.css. Do not support dark mode for now to ensure consistency with the 'Sanitary' clean look.",
+    "10. Components: Use Shadcn UI components (Card, Button, Input, Select, Table, Dialog, Form) but styling them with the 'rounded-2xl' and 'border-border' tokens defined above."
+  ],
+  "universal_guidelines": [
+    "Do not use gradients for backgrounds. Use solid colors or subtle patterns.",
+    "Ensure all interactive elements have 'cursor-pointer' and 'data-testid'.",
+    "Use 'sonner' for all toast notifications (success/error).",
+    "For the rating logic (1-5): 1-3 is RED (bg-red-50 text-red-600 border-red-200), 4-5 is GREEN (bg-green-50 text-green-600 border-green-200).",
+    "Keep animations fast (0.2s - 0.3s). functionality first.",
+    "Respect the 'Telegram Web App' context - back button should be handled via the Telegram SDK or a custom back button in the top left."
+  ]
+}
