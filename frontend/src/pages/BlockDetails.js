@@ -153,9 +153,11 @@ const BlockDetails = () => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="font-semibold text-lg">{room.name}</h3>
-                  <p className="text-sm opacity-75 mt-1">
-                    {room.residents.length} проживающих
-                  </p>
+                  {room.type !== 'common' && (
+                    <p className="text-sm opacity-75 mt-1">
+                      {room.residents.length} проживающих
+                    </p>
+                  )}
                 </div>
                 {room.rating && (
                   <div className="flex items-center gap-1">
@@ -165,7 +167,7 @@ const BlockDetails = () => {
                 )}
               </div>
 
-              {room.residents.length > 0 && (
+              {room.type !== 'common' && room.residents.length > 0 && (
                 <div className="space-y-2">
                   {room.residents.map((resident) => (
                     <div
