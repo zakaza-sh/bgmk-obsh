@@ -19,8 +19,7 @@ const BlocksList = () => {
   
   // Date filter states
   const [showDateFilter, setShowDateFilter] = useState(false);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [filterDate, setFilterDate] = useState('');
   const [filteredInspections, setFilteredInspections] = useState([]);
   const [isFilterActive, setIsFilterActive] = useState(false);
 
@@ -30,14 +29,14 @@ const BlocksList = () => {
 
   // Fetch inspections when date filter changes
   useEffect(() => {
-    if (startDate || endDate) {
+    if (filterDate) {
       fetchFilteredInspections();
       setIsFilterActive(true);
     } else {
       setFilteredInspections([]);
       setIsFilterActive(false);
     }
-  }, [startDate, endDate, floor]);
+  }, [filterDate, floor]);
 
   const fetchBlocksData = async () => {
     try {
@@ -72,8 +71,11 @@ const BlocksList = () => {
     try {
       const params = new URLSearchParams();
       params.append('floor', floor);
-      if (startDate) params.append('start_date', startDate);
-      if (endDate) params.append('end_date', endDate);
+      // Filter by single date - start and end of that day
+      if (filterDate) {
+        params.append('start_date', filterDate);
+        params.append('end_date', filterDate + 'T23:59:59');
+      }
       
       const response = await axios.get(`${API}/inspections?${params.toString()}`);
       setFilteredInspections(response.data);
@@ -89,7 +91,7 @@ const BlocksList = () => {
         i => i.block === block.block
       );
       if (blockInspections.length === 0) return 'no-data';
-      const hasProblems = blockInspections.some(i => i.rating <= 3);
+      const hasProblems = blockInspections.some(i => i.rating <= 2);
       return hasProblems ? 'problem' : 'good';
     }
     
@@ -102,7 +104,7 @@ const BlocksList = () => {
     
     if (ratings.length === 0) return 'default';
     
-    const hasProblems = ratings.some(r => r <= 3);
+    const hasProblems = ratings.some(r => r <= 2);
     return hasProblems ? 'problem' : 'good';
   };
 
@@ -112,8 +114,7 @@ const BlocksList = () => {
   };
 
   const clearDateFilter = () => {
-    setStartDate('');
-    setEndDate('');
+    setFilterDate('');
     setIsFilterActive(false);
     setShowDateFilter(false);
   };
@@ -132,7 +133,7 @@ const BlocksList = () => {
   const formatDateDisplay = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
   };
 
   return (
@@ -215,36 +216,22 @@ const BlocksList = () => {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">От</label>
-                      <Input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        max={endDate || new Date().toISOString().split('T')[0]}
-                        className="h-10"
-                        data-testid="start-date-input"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-muted-foreground mb-1 block">До</label>
-                      <Input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        min={startDate}
-                        max={new Date().toISOString().split('T')[0]}
-                        className="h-10"
-                        data-testid="end-date-input"
-                      />
-                    </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground mb-1 block">Дата проверки</label>
+                    <Input
+                      type="date"
+                      value={filterDate}
+                      onChange={(e) => setFilterDate(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                      className="h-10"
+                      data-testid="filter-date-input"
+                    />
                   </div>
 
                   {isFilterActive && (
                     <div className="mt-3 p-2 bg-primary/10 rounded-lg">
                       <p className="text-xs text-primary">
-                        Показаны проверки: {formatDateDisplay(startDate) || 'начало'} — {formatDateDisplay(endDate) || 'сейчас'}
+                        Показаны проверки за: {formatDateDisplay(filterDate)}
                         {filteredInspections.length > 0 && (
                           <span className="ml-1 font-medium">
                             ({filteredInspections.length} записей)

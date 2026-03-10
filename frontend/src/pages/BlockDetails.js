@@ -201,7 +201,7 @@ const BlockDetails = () => {
 
   const getRatingColor = (rating) => {
     if (!rating) return 'bg-muted text-muted-foreground border-muted';
-    return rating <= 3 
+    return rating <= 2 
       ? 'bg-red-50 text-red-600 border-red-200' 
       : 'bg-green-50 text-green-600 border-green-200';
   };
@@ -387,7 +387,7 @@ const BlockDetails = () => {
                     <div className="flex gap-2" data-testid="rating-selector">
                       {[1, 2, 3, 4, 5].map((num) => {
                         const isSelected = rating === num;
-                        const isProblem = num <= 3;
+                        const isProblem = num <= 2;
                         return (
                           <motion.button
                             key={num}
@@ -420,18 +420,18 @@ const BlockDetails = () => {
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                         className={`flex items-center gap-3 p-3 rounded-xl ${
-                          rating <= 3 
+                          rating <= 2 
                             ? 'bg-red-50 text-red-700'
                             : 'bg-green-50 text-green-700'
                         }`}
                       >
-                        {rating <= 3 ? (
+                        {rating <= 2 ? (
                           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
                         ) : (
                           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
                         )}
                         <span className="text-sm font-medium">
-                          {rating <= 3 ? 'Проблемная комната — требуется внимание' : 'Хорошее состояние'}
+                          {rating <= 2 ? 'Проблемная комната — требуется внимание' : 'Хорошее состояние'}
                         </span>
                       </motion.div>
                     )}
@@ -452,7 +452,7 @@ const BlockDetails = () => {
                   <Button
                     className={`flex-1 h-14 rounded-2xl text-base font-semibold transition-all ${
                       rating 
-                        ? rating <= 3 
+                        ? rating <= 2 
                           ? 'bg-red-500 hover:bg-red-600' 
                           : 'bg-green-500 hover:bg-green-600'
                         : ''
@@ -541,7 +541,7 @@ const BlockDetails = () => {
                         <span className="font-medium">{room.name}</span>
                         {batchRatings[room.type] && (
                           <span className={`text-xs px-2 py-1 rounded-full ${
-                            batchRatings[room.type] <= 3 
+                            batchRatings[room.type] <= 2 
                               ? 'bg-red-100 text-red-700'
                               : 'bg-green-100 text-green-700'
                           }`}>
@@ -552,7 +552,7 @@ const BlockDetails = () => {
                       <div className="flex gap-2" data-testid={`batch-rating-${room.type}`}>
                         {[1, 2, 3, 4, 5].map((num) => {
                           const isSelected = batchRatings[room.type] === num;
-                          const isProblem = num <= 3;
+                          const isProblem = num <= 2;
                           return (
                             <motion.button
                               key={num}
@@ -585,7 +585,7 @@ const BlockDetails = () => {
                             <div className="text-xs text-muted-foreground">{room.shortName}</div>
                             <div className={`text-lg font-bold ${
                               batchRatings[room.type] 
-                                ? batchRatings[room.type] <= 3 ? 'text-red-500' : 'text-green-500'
+                                ? batchRatings[room.type] <= 2 ? 'text-red-500' : 'text-green-500'
                                 : 'text-muted-foreground'
                             }`}>
                               {batchRatings[room.type] || '—'}
