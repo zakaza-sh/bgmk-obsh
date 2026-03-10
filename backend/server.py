@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -662,6 +662,215 @@ async def export_pdf(
 @api_router.get("/health")
 async def health_check():
     return {"status": "healthy", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+# ==================== TELEGRAM BOT ====================
+
+class TelegramWebAppData(BaseModel):
+    init_data: str
+    user_id: Optional[int] = None
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+
+
+class TelegramNotification(BaseModel):
+    chat_id: int
+    message: str
+
+
+@api_router.post("/telegram/validate")
+async def validate_telegram_webapp(data: TelegramWebAppData):
+    """Validate Telegram WebApp init data"""
+    import hashlib
+    import hmac
+    from urllib.parse import parse_qs
+    
+    if not TELEGRAM_BOT_TOKEN:
+        raise HTTPException(status_code=500, detail="Telegram bot not configured")
+    
+    try:
+        # Parse init_data
+        parsed = parse_qs(data.init_data)
+        
+        # Extract hash
+        received_hash = parsed.get('hash', [''])[0]
+        
+        # Build data check string
+        data_check_arr = []
+        for key in sorted(parsed.keys()):
+            if key != 'hash':
+                data_check_arr.append(f"{key}={parsed[key][0]}")
+        data_check_string = '\n'.join(data_check_arr)
+        
+        # Calculate secret key
+        secret_key = hmac.new(
+            b'WebAppData',
+            TELEGRAM_BOT_TOKEN.encode(),
+            hashlib.sha256
+        ).digest()
+        
+        # Calculate hash
+        calculated_hash = hmac.new(
+            secret_key,
+            data_check_string.encode(),
+            hashlib.sha256
+        ).hexdigest()
+        
+        if calculated_hash == received_hash:
+            # Extract user info
+            import json
+            user_data = json.loads(parsed.get('user', ['{}'])[0])
+            
+            return {
+                "valid": True,
+                "user": {
+                    "id": user_data.get('id'),
+                    "username": user_data.get('username'),
+                    "first_name": user_data.get('first_name'),
+                    "last_name": user_data.get('last_name'),
+                    "language_code": user_data.get('language_code')
+                }
+            }
+        else:
+            return {"valid": False, "error": "Invalid hash"}
+            
+    except Exception as e:
+        logger.error(f"Telegram validation error: {e}")
+        return {"valid": False, "error": str(e)}
+
+
+@api_router.post("/telegram/notify")
+async def send_telegram_notification(
+    notification: TelegramNotification,
+    admin: dict = Depends(require_admin)
+):
+    """Send notification to Telegram user (admin only)"""
+    if not TELEGRAM_BOT_TOKEN:
+        raise HTTPException(status_code=500, detail="Telegram bot not configured")
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                json={
+                    "chat_id": notification.chat_id,
+                    "text": notification.message,
+                    "parse_mode": "HTML"
+                }
+            )
+            
+            if response.status_code == 200:
+                return {"success": True, "message": "Notification sent"}
+            else:
+                raise HTTPException(status_code=400, detail=f"Telegram API error: {response.text}")
+                
+    except Exception as e:
+        logger.error(f"Telegram notification error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@api_router.get("/telegram/bot-info")
+async def get_bot_info():
+    """Get Telegram bot information"""
+    if not TELEGRAM_BOT_TOKEN:
+        return {"configured": False}
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getMe"
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('ok'):
+                    bot = data['result']
+                    return {
+                        "configured": True,
+                        "bot": {
+                            "id": bot.get('id'),
+                            "username": bot.get('username'),
+                            "first_name": bot.get('first_name'),
+                            "can_join_groups": bot.get('can_join_groups'),
+                            "supports_inline_queries": bot.get('supports_inline_queries')
+                        }
+                    }
+            
+            return {"configured": False, "error": "Failed to get bot info"}
+            
+    except Exception as e:
+        logger.error(f"Get bot info error: {e}")
+        return {"configured": False, "error": str(e)}
+
+
+@api_router.post("/telegram/webhook")
+async def telegram_webhook(request: Request):
+    """Handle Telegram webhook updates"""
+    if not TELEGRAM_BOT_TOKEN:
+        raise HTTPException(status_code=500, detail="Telegram bot not configured")
+    
+    try:
+        update = await request.json()
+        logger.info(f"Telegram update received: {update}")
+        
+        # Handle /start command
+        message = update.get('message', {})
+        text = message.get('text', '')
+        chat_id = message.get('chat', {}).get('id')
+        
+        if text.startswith('/start'):
+            # Send welcome message with web app button
+            async with httpx.AsyncClient() as client:
+                webapp_url = os.environ.get('WEBAPP_URL', 'https://room-ratings.preview.emergentagent.com')
+                
+                await client.post(
+                    f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                    json={
+                        "chat_id": chat_id,
+                        "text": "🏠 <b>Санитарный контроль общежития</b>\n\nДобро пожаловать! Нажмите кнопку ниже, чтобы открыть приложение.",
+                        "parse_mode": "HTML",
+                        "reply_markup": {
+                            "inline_keyboard": [[
+                                {
+                                    "text": "📱 Открыть приложение",
+                                    "web_app": {"url": webapp_url}
+                                }
+                            ]]
+                        }
+                    }
+                )
+        
+        elif text.startswith('/help'):
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                    json={
+                        "chat_id": chat_id,
+                        "text": "📋 <b>Команды бота:</b>\n\n/start - Начать работу\n/help - Показать справку\n/status - Статус проверок",
+                        "parse_mode": "HTML"
+                    }
+                )
+        
+        elif text.startswith('/status'):
+            # Get inspection statistics
+            total_inspections = await db.inspections.count_documents({})
+            problem_rooms = await db.inspections.count_documents({"rating": {"$lte": 2}})
+            
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+                    json={
+                        "chat_id": chat_id,
+                        "text": f"📊 <b>Статистика проверок:</b>\n\n• Всего проверок: {total_inspections}\n• Проблемных комнат: {problem_rooms}",
+                        "parse_mode": "HTML"
+                    }
+                )
+        
+        return {"ok": True}
+        
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        return {"ok": False, "error": str(e)}
 
 
 # Include the router in the main app

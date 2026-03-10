@@ -2,6 +2,7 @@ import React from "react";
 import "@/App.css";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { TelegramProvider } from "./context/TelegramContext";
 import { Toaster } from "./components/ui/sonner";
 
 // Pages
@@ -56,12 +57,14 @@ function AppRoutes() {
 function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <div className="App">
-          <AppRoutes />
-          <Toaster position="top-center" richColors />
-        </div>
-      </AuthProvider>
+      <TelegramProvider>
+        <AuthProvider>
+          <div className="App">
+            <AppRoutes />
+            <Toaster position="top-center" richColors />
+          </div>
+        </AuthProvider>
+      </TelegramProvider>
     </BrowserRouter>
   );
 }
