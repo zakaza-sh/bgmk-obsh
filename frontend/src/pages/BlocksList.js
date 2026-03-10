@@ -63,11 +63,17 @@ const BlocksList = () => {
     return hasProblems ? 'problem' : 'good';
   };
 
+  // Calculate block number in format XXX (floor + block number)
+  const getBlockNumber = (block) => {
+    return parseInt(floor) * 100 + block.block;
+  };
+
   const filteredBlocks = blocks.filter(block => {
     if (!search) return true;
     const searchLower = search.toLowerCase();
+    const blockNum = getBlockNumber(block).toString();
     return (
-      block.block.toString().includes(searchLower) ||
+      blockNum.includes(searchLower) ||
       block.residents?.some(r => r.full_name.toLowerCase().includes(searchLower))
     );
   });
@@ -119,6 +125,7 @@ const BlocksList = () => {
             <div className="grid grid-cols-3 gap-3">
               {filteredBlocks.map((block) => {
                 const status = getBlockStatus(block);
+                const blockNumber = getBlockNumber(block);
                 return (
                   <motion.button
                     key={block.block}
@@ -140,7 +147,7 @@ const BlocksList = () => {
                     />
                     
                     <div className="text-center">
-                      <div className="text-2xl font-display font-bold">{block.block}</div>
+                      <div className="text-xl font-display font-bold">{blockNumber}</div>
                       <div className="text-xs text-muted-foreground mt-1">
                         {block.residents?.length || 0} чел.
                       </div>

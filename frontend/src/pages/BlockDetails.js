@@ -18,6 +18,9 @@ const BlockDetails = () => {
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [rating, setRating] = useState(null);
 
+  // Calculate block number in format XXX
+  const blockNumber = parseInt(floor) * 100 + parseInt(block);
+
   useEffect(() => {
     fetchBlockData();
   }, [floor, block]);
@@ -129,7 +132,7 @@ const BlockDetails = () => {
             </Button>
             <div>
               <h1 className="text-2xl font-display font-semibold tracking-tight">
-                Блок {block}
+                Блок {blockNumber}
               </h1>
               <p className="text-sm text-muted-foreground">{floor} этаж</p>
             </div>

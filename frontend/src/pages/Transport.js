@@ -80,7 +80,7 @@ const Transport = () => {
                 Расписание транспорта
               </h1>
               <p className="text-sm text-muted-foreground">
-                {currentTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                Остановка "Дом правосудия"
               </p>
             </div>
           </div>
@@ -88,6 +88,19 @@ const Transport = () => {
 
         {/* Content */}
         <div className="p-6 space-y-4">
+          {/* Stop info */}
+          <div className="bg-muted/50 rounded-2xl p-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold">Остановка "Дом правосудия"</h3>
+              <span className="text-sm text-muted-foreground">
+                {currentTime.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              ул. Семашко, 33 • Рядом с метро "Петровщина"
+            </p>
+          </div>
+
           {schedules.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               Расписание не найдено
@@ -123,7 +136,7 @@ const Transport = () => {
                             {schedule.route_number}
                           </h3>
                           <span className="text-sm text-muted-foreground">
-                            {schedule.vehicle_type === 'bus' ? 'Автобус' : 'Троллейбус'}
+                            Автобус
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -379,7 +379,7 @@ const Admin = () => {
                   <div>
                     <h3 className="font-medium">{resident.full_name}</h3>
                     <p className="text-sm text-muted-foreground">
-                      Этаж {resident.floor}, Блок {resident.block} - {
+                      Блок {resident.floor * 100 + resident.block} ({resident.floor} этаж) - {
                         resident.room_type === 'small' ? 'Маленькая' :
                         resident.room_type === 'large' ? 'Большая' : 'Общее пространство'
                       }
