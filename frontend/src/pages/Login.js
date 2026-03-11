@@ -24,23 +24,24 @@ const Login = () => {
       const response = await axios.post(`${API}/auth/login`, { username, password });
       const { access_token, user: userData } = response.data;
       
+      // Save token
       localStorage.setItem('token', access_token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
       toast.success('Успешный вход');
       
-      // Redirect based on role
-      if (userData.role === 'floor_manager' && userData.floor_number) {
-        navigate(`/floor/${userData.floor_number}`);
-      } else if (userData.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
-      
-      // Reload to update auth state
-      window.location.reload();
+      // Small delay then redirect with page reload to update auth state
+      setTimeout(() => {
+        if (userData.role === 'floor_manager' && userData.floor_number) {
+          window.location.href = `/floor/${userData.floor_number}`;
+        } else if (userData.role === 'admin') {
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/';
+        }
+      }, 300);
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Ошибка входа');
-    } finally {
+      toast.error(error.response?.data?.detail || 'Неверный логин или пароль');
       setLoading(false);
     }
   };
