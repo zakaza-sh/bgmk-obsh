@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const InspectionCalendar = ({ floor, block, onDateSelect, selectedDate }) => {
   const [inspectionDates, setInspectionDates] = useState([]);
+  const [inspectionDetails, setInspectionDetails] = useState({});
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [loading, setLoading] = useState(true);
 
@@ -18,6 +19,19 @@ const InspectionCalendar = ({ floor, block, onDateSelect, selectedDate }) => {
       const response = await fetch(`${API}/api/blocks/${floor}/${block}/inspection-dates`);
       const data = await response.json();
       setInspectionDates(data.dates || []);
+      
+      // Получаем детали для всех дат
+      const historyRes = await fetch(`${API}/api/blocks/${floor}/${block}/history`);
+      const historyData = await historyRes.json();
+      
+      // Группируем по датам
+      const details = {};
+      (historyData.history || []).forEach(h => {
+        const date = h.inspection_date.split('T')[0];
+        if (!details[date]) details[date] = [];
+        details[date].push(h);
+      });
+      setInspectionDetails(details);
     } catch (error) {
       console.error('Error fetching inspection dates:', error);
       setInspectionDates([]);
@@ -72,6 +86,15 @@ const InspectionCalendar = ({ floor, block, onDateSelect, selectedDate }) => {
     'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
   const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
+  const getDateTooltip = (day) => {
+    const dateStr = formatDateForComparison(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+    const details = inspectionDetails[dateStr];
+    if (!details || details.length === 0) return '';
+    
+    const avgRating = (details.reduce((sum, d) => sum + d.rating, 0) / details.length).toFixed(1);
+    return `Проверка: ${avgRating}★`;
+  };
+
   // Create calendar grid
   const calendarDays = [];
   // Empty cells for days before month starts
@@ -80,6 +103,7 @@ const InspectionCalendar = ({ floor, block, onDateSelect, selectedDate }) => {
   }
   // Days of the month
   for (let day = 1; day <= daysInMonth; day++) {
+    const tooltip = getDateTooltip(day);
     calendarDays.push(
       <motion.button
         key={day}
@@ -87,8 +111,9 @@ const InspectionCalendar = ({ floor, block, onDateSelect, selectedDate }) => {
         disabled={!hasInspection(day)}
         whileHover={hasInspection(day) ? { scale: 1.1 } : {}}
         whileTap={hasInspection(day) ? { scale: 0.95 } : {}}
+        title={tooltip}
         className={`
-          h-10 rounded-lg flex items-center justify-center text-sm font-medium transition-all
+          h-10 rounded-lg flex items-center justify-center text-sm font-medium transition-all relative
           ${isSelectedDate(day)
             ? 'bg-blue-500 text-white ring-2 ring-blue-300'
             : hasInspection(day)
@@ -98,6 +123,9 @@ const InspectionCalendar = ({ floor, block, onDateSelect, selectedDate }) => {
         `}
       >
         {day}
+        {hasInspection(day) && (
+          <span className="absolute bottom-0.5 w-1 h-1 bg-green-400 rounded-full"></span>
+        )}
       </motion.button>
     );
   }
