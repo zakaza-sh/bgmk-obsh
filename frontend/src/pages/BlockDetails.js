@@ -11,12 +11,17 @@ import { toast } from 'sonner';
 const BlockDetails = () => {
   const { floor, block } = useParams();
   const navigate = useNavigate();
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [blockData, setBlockData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  
+  // Get token and user directly from localStorage for reliability
+  const token = localStorage.getItem('token');
+  const savedUser = localStorage.getItem('user');
+  const currentUser = user || (savedUser ? JSON.parse(savedUser) : null);
   
   // Ratings state
   const [inspectionDate, setInspectionDate] = useState('');
@@ -27,7 +32,7 @@ const BlockDetails = () => {
   });
 
   const blockNumber = parseInt(floor) * 100 + parseInt(block);
-  const canRate = user?.role === 'floor_manager' || user?.role === 'admin';
+  const canRate = currentUser?.role === 'floor_manager' || currentUser?.role === 'admin';
 
   useEffect(() => {
     setInspectionDate(new Date().toISOString().split('T')[0]);
