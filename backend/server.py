@@ -248,7 +248,7 @@ async def login(credentials: UserLogin):
 @api_router.get("/auth/me")
 async def get_me(user: dict = Depends(get_current_user)):
     return {
-        "id": user['id'],
+        "id": user.get('id', user['username']),
         "username": user['username'],
         "role": user['role'],
         "floor_number": user.get('floor_number')
@@ -372,7 +372,7 @@ async def create_inspection(
         room_type=inspection_data.room_type,
         rating=inspection_data.rating,
         notes=inspection_data.notes,
-        inspector_id=user['id'],
+        inspector_id=user.get('id', user['username']),
         inspector_name=user['username'],
         inspection_date=inspection_date
     )
