@@ -120,7 +120,7 @@ const InspectionCalendar = ({ floor, block, onDateSelect, selectedDate }) => {
         </button>
         
         <h3 className="text-lg font-semibold text-white">
-          {monthNames[month]} {year}
+          {monthNames[month]} {year} г.
         </h3>
         
         <button
