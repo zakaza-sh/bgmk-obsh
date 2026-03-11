@@ -2,8 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, Users, Star, Calendar, CheckCircle2, AlertTriangle, X, Sparkles } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -21,19 +19,16 @@ const BlockDetails = () => {
   const [inspectionDate, setInspectionDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Multi-room rating mode
-  const [ratingMode, setRatingMode] = useState('single'); // 'single' or 'batch'
+  const [ratingMode, setRatingMode] = useState('single');
   const [batchRatings, setBatchRatings] = useState({
     small: null,
     large: null,
     common: null
   });
 
-  // Calculate block number in format XXX
   const blockNumber = parseInt(floor) * 100 + parseInt(block);
 
   useEffect(() => {
-    // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     setInspectionDate(today);
   }, []);
@@ -80,14 +75,12 @@ const BlockDetails = () => {
       toast.error('Выберите оценку от 1 до 5');
       return;
     }
-
     if (!inspectionDate) {
       toast.error('Выберите дату проверки');
       return;
     }
-
     if (!token) {
-      toast.error('Необходимо войти в систему для выставления оценок');
+      toast.error('Необходимо войти в систему');
       navigate('/login');
       return;
     }
@@ -105,7 +98,6 @@ const BlockDetails = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      
       toast.success('Оценка сохранена!');
       closeModal();
       fetchBlockData();
@@ -119,17 +111,14 @@ const BlockDetails = () => {
 
   const handleBatchRatingSubmit = async () => {
     const roomsToRate = Object.entries(batchRatings).filter(([_, r]) => r !== null && r >= 1 && r <= 5);
-    
     if (roomsToRate.length === 0) {
       toast.error('Выберите хотя бы одну оценку');
       return;
     }
-
     if (!inspectionDate) {
       toast.error('Выберите дату проверки');
       return;
     }
-
     if (!token) {
       toast.error('Необходимо войти в систему');
       navigate('/login');
@@ -138,7 +127,6 @@ const BlockDetails = () => {
 
     setIsSubmitting(true);
     try {
-      // Submit all ratings in parallel
       await Promise.all(
         roomsToRate.map(([roomType, roomRating]) =>
           axios.post(
@@ -154,7 +142,6 @@ const BlockDetails = () => {
           )
         )
       );
-      
       toast.success(`Сохранено ${roomsToRate.length} оценок!`);
       closeModal();
       fetchBlockData();
@@ -171,8 +158,7 @@ const BlockDetails = () => {
     setRating(null);
     setRatingMode('single');
     setBatchRatings({ small: null, large: null, common: null });
-    const today = new Date().toISOString().split('T')[0];
-    setInspectionDate(today);
+    setInspectionDate(new Date().toISOString().split('T')[0]);
   };
 
   const rooms = [
@@ -199,11 +185,16 @@ const BlockDetails = () => {
     }
   ];
 
-  const getRatingColor = (rating) => {
-    if (!rating) return 'bg-muted text-muted-foreground border-muted';
+  const getRatingStyle = (rating) => {
+    if (!rating) return 'bg-white/5 border-white/10';
     return rating <= 2 
-      ? 'bg-red-50 text-red-600 border-red-200' 
-      : 'bg-green-50 text-green-600 border-green-200';
+      ? 'bg-red-500/10 border-red-500/30' 
+      : 'bg-emerald-500/10 border-emerald-500/30';
+  };
+
+  const getRatingTextColor = (rating) => {
+    if (!rating) return 'text-slate-400';
+    return rating <= 2 ? 'text-red-400' : 'text-emerald-400';
   };
 
   const getRatingLabel = (num) => {
@@ -221,92 +212,98 @@ const BlockDetails = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-[#0a0f1c] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-10 w-10 border-2 border-cyan-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-md mx-auto min-h-screen shadow-2xl md:max-w-lg md:border-x md:border-border">
+    <div className="min-h-screen bg-[#0a0f1c]">
+      <div className="fixed inset-0 bg-gradient-to-br from-[#0a0f1c] via-[#111827] to-[#0a0f1c]"></div>
+      <div className="fixed inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.02%22%3E%3Cpath d=%22M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
+      
+      <div className="relative max-w-lg mx-auto min-h-screen">
         {/* Header */}
-        <div className="bg-card border-b border-border p-6 sticky top-0 z-10">
+        <div className="p-6 pb-4">
           <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
+            <button
               onClick={() => navigate(`/floor/${floor}`)}
-              className="rounded-xl"
+              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
               data-testid="back-button"
             >
               <ArrowLeft className="w-5 h-5" />
-            </Button>
+            </button>
             <div className="flex-1">
-              <h1 className="text-2xl font-display font-semibold tracking-tight">
+              <h1 className="text-xl font-semibold text-white">
                 Блок {blockNumber}
               </h1>
-              <p className="text-sm text-muted-foreground">{floor} этаж</p>
+              <p className="text-sm text-slate-500">{floor} этаж</p>
             </div>
             
-            {/* Quick Rate All Button for managers */}
             {canRate && (
-              <Button
+              <button
                 onClick={openBatchRatingMode}
-                size="sm"
-                className="rounded-xl gap-2"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-medium hover:from-cyan-400 hover:to-blue-400 transition-all"
                 data-testid="batch-rate-button"
               >
                 <Sparkles className="w-4 h-4" />
                 Оценить всё
-              </Button>
+              </button>
             )}
           </div>
+
+          {/* User info */}
+          {user && (
+            <div className="mt-4 flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10">
+              <div className={`w-2 h-2 rounded-full ${user.role === 'admin' ? 'bg-amber-500' : 'bg-cyan-500'}`}></div>
+              <span className="text-sm text-slate-300">
+                {user.role === 'admin' ? 'Администратор' : `Староста ${user.floor_number} этажа`}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-4">
+        <div className="px-6 pb-6 space-y-3">
           {rooms.map((room) => (
-            <Card
+            <button
               key={room.type}
-              className={`p-6 rounded-2xl border transition-all hover:shadow-md ${
-                canRate ? 'cursor-pointer' : ''
-              } ${getRatingColor(room.rating)}`}
               onClick={() => handleRoomClick(room.type, room.rating)}
+              className={`w-full p-5 rounded-xl border transition-all text-left ${getRatingStyle(room.rating)} ${
+                canRate ? 'hover:border-cyan-500/50 cursor-pointer' : ''
+              }`}
               data-testid={`room-card-${room.type}`}
             >
-              <div className="flex justify-between items-start mb-4">
+              <div className="flex justify-between items-start mb-3">
                 <div>
-                  <h3 className="font-semibold text-lg">{room.name}</h3>
+                  <h3 className="font-medium text-white">{room.name}</h3>
                   {room.type !== 'common' && (
-                    <p className="text-sm opacity-75 mt-1">
+                    <p className="text-sm text-slate-500 mt-1">
                       {room.residents.length} проживающих
                     </p>
                   )}
                 </div>
                 {room.rating ? (
-                  <div className="flex items-center gap-1">
+                  <div className={`flex items-center gap-1 ${getRatingTextColor(room.rating)}`}>
                     <Star className="w-5 h-5 fill-current" />
                     <span className="text-xl font-bold">{room.rating}</span>
                   </div>
                 ) : canRate && (
-                  <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
-                    Нажмите для оценки
+                  <span className="text-xs px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded-full">
+                    Оценить
                   </span>
                 )}
               </div>
 
               {room.type !== 'common' && room.residents.length > 0 && (
-                <div className="space-y-2">
+                <div className="space-y-2 pt-3 border-t border-white/5">
                   {room.residents.map((resident) => (
-                    <div
-                      key={resident.id}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <Users className="w-4 h-4 opacity-50" />
-                      <span>{resident.full_name}</span>
+                    <div key={resident.id} className="flex items-center gap-2 text-sm">
+                      <Users className="w-4 h-4 text-slate-500" />
+                      <span className="text-slate-300">{resident.full_name}</span>
                       {resident.is_block_leader && (
-                        <span className="ml-auto text-xs bg-primary/20 px-2 py-1 rounded-full">
+                        <span className="ml-auto text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
                           Староста
                         </span>
                       )}
@@ -314,46 +311,43 @@ const BlockDetails = () => {
                   ))}
                 </div>
               )}
-            </Card>
+            </button>
           ))}
         </div>
 
-        {/* Rating Modal - Single Room Mode */}
+        {/* Rating Modal - Single Room */}
         <AnimatePresence>
           {selectedRoom && ratingMode === 'single' && canRate && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
               <motion.div
                 initial={{ opacity: 0, y: 100 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 100 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-card w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden"
+                className="bg-[#151b2e] w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-white/10 overflow-hidden"
               >
-                {/* Drag Handle (mobile) */}
                 <div className="flex justify-center pt-3 sm:hidden">
-                  <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
+                  <div className="w-10 h-1 bg-white/20 rounded-full" />
                 </div>
 
-                {/* Header */}
                 <div className="p-6 pb-4">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="flex items-center gap-2 text-primary text-sm font-medium mb-1">
+                      <div className="flex items-center gap-2 text-cyan-400 text-sm font-medium mb-1">
                         <Star className="w-4 h-4" />
                         Оценка комнаты
                       </div>
-                      <h3 className="text-xl font-display font-semibold">
+                      <h3 className="text-xl font-semibold text-white">
                         {selectedRoom === 'small' ? 'Маленькая комната' :
                          selectedRoom === 'large' ? 'Большая комната' : 
                          'Общее пространство'}
                       </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-sm text-slate-500 mt-1">
                         Блок {blockNumber} • {floor} этаж
                       </p>
                     </div>
                     <button
                       onClick={closeModal}
-                      className="w-10 h-10 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
+                      className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
                       data-testid="close-modal-button"
                     >
                       <X className="w-5 h-5" />
@@ -361,29 +355,24 @@ const BlockDetails = () => {
                   </div>
                 </div>
 
-                {/* Content */}
                 <div className="px-6 pb-6 space-y-5">
-                  {/* Date Selection - Compact */}
-                  <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl">
-                    <Calendar className="w-5 h-5 text-muted-foreground" />
+                  <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                    <Calendar className="w-5 h-5 text-slate-500" />
                     <div className="flex-1">
-                      <label className="text-xs text-muted-foreground block mb-1">Дата проверки</label>
+                      <label className="text-xs text-slate-500 block mb-1">Дата проверки</label>
                       <Input
                         type="date"
                         value={inspectionDate}
                         onChange={(e) => setInspectionDate(e.target.value)}
                         max={new Date().toISOString().split('T')[0]}
-                        className="h-9 bg-transparent border-0 p-0 text-base font-medium focus-visible:ring-0"
+                        className="h-9 bg-transparent border-0 p-0 text-base font-medium text-white focus-visible:ring-0 [color-scheme:dark]"
                         data-testid="inspection-date-input"
                       />
                     </div>
                   </div>
 
-                  {/* Rating Selection - Large Buttons */}
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground mb-3 block">
-                      Выберите оценку
-                    </label>
+                    <label className="text-sm text-slate-400 mb-3 block">Выберите оценку</label>
                     <div className="flex gap-2" data-testid="rating-selector">
                       {[1, 2, 3, 4, 5].map((num) => {
                         const isSelected = rating === num;
@@ -393,17 +382,17 @@ const BlockDetails = () => {
                             key={num}
                             onClick={() => setRating(num)}
                             whileTap={{ scale: 0.95 }}
-                            className={`flex-1 py-4 rounded-2xl flex flex-col items-center justify-center border-2 transition-all ${
+                            className={`flex-1 py-4 rounded-xl flex flex-col items-center justify-center border transition-all ${
                               isSelected
                                 ? isProblem 
-                                  ? 'bg-red-500 border-red-500 text-white shadow-lg shadow-red-500/30'
-                                  : 'bg-green-500 border-green-500 text-white shadow-lg shadow-green-500/30'
-                                : 'bg-white border-border text-foreground hover:border-primary/50'
+                                  ? 'bg-red-500 border-red-500 text-white'
+                                  : 'bg-emerald-500 border-emerald-500 text-white'
+                                : 'bg-white/5 border-white/10 text-white hover:border-cyan-500/50'
                             }`}
                             data-testid={`rating-${num}`}
                           >
                             <span className="text-2xl font-bold">{num}</span>
-                            <span className={`text-[10px] mt-1 ${isSelected ? 'text-white/90' : 'text-muted-foreground'}`}>
+                            <span className={`text-[10px] mt-1 ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>
                               {getRatingLabel(num)}
                             </span>
                           </motion.button>
@@ -412,7 +401,6 @@ const BlockDetails = () => {
                     </div>
                   </div>
 
-                  {/* Rating Status Hint */}
                   <AnimatePresence mode="wait">
                     {rating && (
                       <motion.div
@@ -421,8 +409,8 @@ const BlockDetails = () => {
                         exit={{ opacity: 0, height: 0 }}
                         className={`flex items-center gap-3 p-3 rounded-xl ${
                           rating <= 2 
-                            ? 'bg-red-50 text-red-700'
-                            : 'bg-green-50 text-green-700'
+                            ? 'bg-red-500/10 border border-red-500/30 text-red-400'
+                            : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
                         }`}
                       >
                         {rating <= 2 ? (
@@ -431,84 +419,75 @@ const BlockDetails = () => {
                           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
                         )}
                         <span className="text-sm font-medium">
-                          {rating <= 2 ? 'Проблемная комната — требуется внимание' : 'Хорошее состояние'}
+                          {rating <= 2 ? 'Проблемная комната' : 'Хорошее состояние'}
                         </span>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
 
-                {/* Actions */}
                 <div className="p-6 pt-0 flex gap-3">
-                  <Button
-                    variant="outline"
-                    className="flex-1 h-14 rounded-2xl text-base"
+                  <button
                     onClick={closeModal}
                     disabled={isSubmitting}
+                    className="flex-1 h-12 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-medium transition-all disabled:opacity-50"
                     data-testid="rating-cancel-button"
                   >
                     Отмена
-                  </Button>
-                  <Button
-                    className={`flex-1 h-14 rounded-2xl text-base font-semibold transition-all ${
-                      rating 
-                        ? rating <= 2 
-                          ? 'bg-red-500 hover:bg-red-600' 
-                          : 'bg-green-500 hover:bg-green-600'
-                        : ''
-                    }`}
+                  </button>
+                  <button
                     onClick={handleSingleRatingSubmit}
                     disabled={!rating || isSubmitting}
+                    className={`flex-1 h-12 rounded-xl font-medium transition-all disabled:opacity-50 ${
+                      rating 
+                        ? rating <= 2 
+                          ? 'bg-red-500 hover:bg-red-600 text-white' 
+                          : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                        : 'bg-white/10 text-slate-400'
+                    }`}
                     data-testid="rating-submit-button"
                   >
                     {isSubmitting ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                    ) : rating ? (
-                      'Сохранить'
-                    ) : (
-                      'Выберите оценку'
-                    )}
-                  </Button>
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mx-auto" />
+                    ) : rating ? 'Сохранить' : 'Выберите оценку'}
+                  </button>
                 </div>
               </motion.div>
             </div>
           )}
         </AnimatePresence>
 
-        {/* Rating Modal - Batch Mode (Rate All Rooms) */}
+        {/* Rating Modal - Batch Mode */}
         <AnimatePresence>
           {selectedRoom === 'batch' && ratingMode === 'batch' && canRate && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
               <motion.div
                 initial={{ opacity: 0, y: 100 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 100 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-card w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+                className="bg-[#151b2e] w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-white/10 overflow-hidden max-h-[90vh] overflow-y-auto"
               >
-                {/* Drag Handle (mobile) */}
                 <div className="flex justify-center pt-3 sm:hidden">
-                  <div className="w-10 h-1 bg-muted-foreground/30 rounded-full" />
+                  <div className="w-10 h-1 bg-white/20 rounded-full" />
                 </div>
 
-                {/* Header */}
-                <div className="p-6 pb-4 sticky top-0 bg-card z-10">
+                <div className="p-6 pb-4 sticky top-0 bg-[#151b2e] z-10 border-b border-white/5">
                   <div className="flex items-start justify-between">
                     <div>
-                      <div className="flex items-center gap-2 text-primary text-sm font-medium mb-1">
+                      <div className="flex items-center gap-2 text-cyan-400 text-sm font-medium mb-1">
                         <Sparkles className="w-4 h-4" />
                         Быстрая оценка
                       </div>
-                      <h3 className="text-xl font-display font-semibold">
+                      <h3 className="text-xl font-semibold text-white">
                         Оценить весь блок
                       </h3>
-                      <p className="text-sm text-muted-foreground mt-1">
+                      <p className="text-sm text-slate-500 mt-1">
                         Блок {blockNumber} • {floor} этаж
                       </p>
                     </div>
                     <button
                       onClick={closeModal}
-                      className="w-10 h-10 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center transition-colors"
+                      className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
                       data-testid="close-batch-modal-button"
                     >
                       <X className="w-5 h-5" />
@@ -516,34 +495,31 @@ const BlockDetails = () => {
                   </div>
                 </div>
 
-                {/* Content */}
                 <div className="px-6 pb-6 space-y-5">
-                  {/* Date Selection */}
-                  <div className="flex items-center gap-3 p-3 bg-muted/40 rounded-xl">
-                    <Calendar className="w-5 h-5 text-muted-foreground" />
+                  <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
+                    <Calendar className="w-5 h-5 text-slate-500" />
                     <div className="flex-1">
-                      <label className="text-xs text-muted-foreground block mb-1">Дата проверки</label>
+                      <label className="text-xs text-slate-500 block mb-1">Дата проверки</label>
                       <Input
                         type="date"
                         value={inspectionDate}
                         onChange={(e) => setInspectionDate(e.target.value)}
                         max={new Date().toISOString().split('T')[0]}
-                        className="h-9 bg-transparent border-0 p-0 text-base font-medium focus-visible:ring-0"
+                        className="h-9 bg-transparent border-0 p-0 text-base font-medium text-white focus-visible:ring-0 [color-scheme:dark]"
                         data-testid="batch-inspection-date-input"
                       />
                     </div>
                   </div>
 
-                  {/* Rooms Rating Sections */}
                   {rooms.map((room) => (
                     <div key={room.type} className="space-y-3">
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{room.name}</span>
+                        <span className="font-medium text-white">{room.name}</span>
                         {batchRatings[room.type] && (
                           <span className={`text-xs px-2 py-1 rounded-full ${
                             batchRatings[room.type] <= 2 
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-green-100 text-green-700'
+                              ? 'bg-red-500/20 text-red-400'
+                              : 'bg-emerald-500/20 text-emerald-400'
                           }`}>
                             {getRatingLabel(batchRatings[room.type])}
                           </span>
@@ -558,12 +534,12 @@ const BlockDetails = () => {
                               key={num}
                               onClick={() => setBatchRatings(prev => ({ ...prev, [room.type]: num }))}
                               whileTap={{ scale: 0.95 }}
-                              className={`flex-1 py-3 rounded-xl flex items-center justify-center border-2 transition-all text-lg font-bold ${
+                              className={`flex-1 py-3 rounded-xl flex items-center justify-center border transition-all text-lg font-bold ${
                                 isSelected
                                   ? isProblem 
                                     ? 'bg-red-500 border-red-500 text-white'
-                                    : 'bg-green-500 border-green-500 text-white'
-                                  : 'bg-white border-border text-foreground hover:border-primary/50'
+                                    : 'bg-emerald-500 border-emerald-500 text-white'
+                                  : 'bg-white/5 border-white/10 text-white hover:border-cyan-500/50'
                               }`}
                               data-testid={`batch-rating-${room.type}-${num}`}
                             >
@@ -575,18 +551,17 @@ const BlockDetails = () => {
                     </div>
                   ))}
 
-                  {/* Summary */}
                   {Object.values(batchRatings).some(r => r !== null) && (
-                    <div className="p-4 bg-muted/40 rounded-xl">
-                      <div className="text-sm text-muted-foreground mb-2">Итого оценок:</div>
+                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
+                      <div className="text-sm text-slate-500 mb-2">Итого:</div>
                       <div className="flex gap-4">
                         {rooms.map(room => (
-                          <div key={room.type} className="text-center">
-                            <div className="text-xs text-muted-foreground">{room.shortName}</div>
+                          <div key={room.type} className="text-center flex-1">
+                            <div className="text-xs text-slate-500">{room.shortName}</div>
                             <div className={`text-lg font-bold ${
                               batchRatings[room.type] 
-                                ? batchRatings[room.type] <= 2 ? 'text-red-500' : 'text-green-500'
-                                : 'text-muted-foreground'
+                                ? batchRatings[room.type] <= 2 ? 'text-red-400' : 'text-emerald-400'
+                                : 'text-slate-600'
                             }`}>
                               {batchRatings[room.type] || '—'}
                             </div>
@@ -597,29 +572,27 @@ const BlockDetails = () => {
                   )}
                 </div>
 
-                {/* Actions */}
-                <div className="p-6 pt-0 flex gap-3 sticky bottom-0 bg-card">
-                  <Button
-                    variant="outline"
-                    className="flex-1 h-14 rounded-2xl text-base"
+                <div className="p-6 pt-0 flex gap-3 sticky bottom-0 bg-[#151b2e] border-t border-white/5">
+                  <button
                     onClick={closeModal}
                     disabled={isSubmitting}
+                    className="flex-1 h-12 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-medium transition-all disabled:opacity-50"
                     data-testid="batch-cancel-button"
                   >
                     Отмена
-                  </Button>
-                  <Button
-                    className="flex-1 h-14 rounded-2xl text-base font-semibold"
+                  </button>
+                  <button
                     onClick={handleBatchRatingSubmit}
                     disabled={!Object.values(batchRatings).some(r => r !== null) || isSubmitting}
+                    className="flex-1 h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-medium transition-all disabled:opacity-50"
                     data-testid="batch-submit-button"
                   >
                     {isSubmitting ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mx-auto" />
                     ) : (
                       `Сохранить (${Object.values(batchRatings).filter(r => r !== null).length})`
                     )}
-                  </Button>
+                  </button>
                 </div>
               </motion.div>
             </div>
