@@ -1067,6 +1067,14 @@ async def _handle_bot_command(text: str, chat_id: int):
             
             await send_telegram_message(chat_id, "\n".join(lines))
         
+        elif text.startswith('/myid'):
+            # Отправить пользователю его chat_id
+            await send_telegram_message(
+                chat_id,
+                f"<b>ℹ️ Ваш Chat ID:</b> <code>{chat_id}</code>\n\n"
+                "Сохраните это для получения рассылок."
+            )
+        
     except Exception as e:
         logger.error(f"Bot command handler error: {e}")
 
