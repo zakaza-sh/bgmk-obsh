@@ -102,7 +102,7 @@ def upload_residents(api_url, token, residents):
     return success, failed
 
 if __name__ == "__main__":
-    API_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://sanitary-check.preview.emergentagent.com')
+    API_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://transit-qa.preview.emergentagent.com')
     
     print("=== Загрузка проживающих ===\n")
     

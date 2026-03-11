@@ -56,16 +56,16 @@ GET /api/admin/*                     # Админ функции
 
 ```bash
 # Получить информацию о блоке
-curl https://sanitary-check.preview.emergentagent.com/api/blocks/2/1
+curl https://transit-qa.preview.emergentagent.com/api/blocks/2/1
 
 # Получить список проживающих
-curl https://sanitary-check.preview.emergentagent.com/api/residents?floor=2&block=1
+curl https://transit-qa.preview.emergentagent.com/api/residents?floor=2&block=1
 
 # Получить оценки
-curl https://sanitary-check.preview.emergentagent.com/api/inspections?floor=2
+curl https://transit-qa.preview.emergentagent.com/api/inspections?floor=2
 
 # Получить расписание транспорта
-curl https://sanitary-check.preview.emergentagent.com/api/transport
+curl https://transit-qa.preview.emergentagent.com/api/transport
 ```
 
 ## Интерфейс
