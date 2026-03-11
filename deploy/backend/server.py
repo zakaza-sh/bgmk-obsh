@@ -904,7 +904,7 @@ async def telegram_webhook(request: Request):
         if text.startswith('/start'):
             # Send welcome message with web app button
             async with httpx.AsyncClient() as client:
-                webapp_url = os.environ.get('WEBAPP_URL', 'https://room-ratings.preview.emergentagent.com')
+                webapp_url = os.environ.get('WEBAPP_URL', 'https://sanitary-check.preview.emergentagent.com')
                 
                 await client.post(
                     f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",

@@ -133,12 +133,12 @@
 
 ```bash
 # Проверка входа администратора
-curl -X POST https://room-ratings.preview.emergentagent.com/api/auth/login \
+curl -X POST https://sanitary-check.preview.emergentagent.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"admin_dorm","password":"ADm1n@D0rm2024!"}'
 
 # Проверка входа старосты этажа 2
-curl -X POST https://room-ratings.preview.emergentagent.com/api/auth/login \
+curl -X POST https://sanitary-check.preview.emergentagent.com/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username":"floor2_manager","password":"Floor2@2024!"}'
 ```

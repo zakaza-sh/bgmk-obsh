@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BusFront, TramFront, Clock, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, BusFront, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
@@ -48,8 +48,8 @@ const Transport = () => {
     return messages[Math.floor(Math.random() * messages.length)];
   };
 
-  const getVehicleIcon = (type) => {
-    return type === 'bus' ? <BusFront className="w-8 h-8" /> : <TramFront className="w-8 h-8" />;
+  const getVehicleIcon = () => {
+    return <BusFront className="w-8 h-8" />;
   };
 
   if (loading) {
@@ -123,12 +123,8 @@ const Transport = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-xl ${
-                        schedule.vehicle_type === 'bus' 
-                          ? 'bg-blue-100 text-blue-600'
-                          : 'bg-green-100 text-green-600'
-                      }`}>
-                        {getVehicleIcon(schedule.vehicle_type)}
+                      <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
+                        {getVehicleIcon()}
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -136,7 +132,7 @@ const Transport = () => {
                             {schedule.route_number}
                           </h3>
                           <span className="text-sm text-muted-foreground">
-                            {schedule.vehicle_type === 'bus' ? 'Автобус' : 'Троллейбус'}
+                            Автобус
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -178,8 +174,12 @@ const Transport = () => {
             variant="outline"
             data-testid="refresh-button"
           >
+            <RefreshCw className="w-4 h-4 mr-2" />
             Обновить
           </Button>
+          <p className="text-xs text-center text-muted-foreground mt-3">
+            Маршруты: 103, 57, 38
+          </p>
         </div>
       </div>
     </div>

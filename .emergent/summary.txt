@@ -6,105 +6,80 @@ PRODUCT REQUIREMENTS:
 - Each block contains a Small room, a Big room, and a Common space.
 - Users should be able to click on a block to see the residents of each room. Each block has a designated block monitor.
 - A rating system from 1 to 5 should be available for the Small room, Big room, and Common space.
-- Rooms with a rating of 1-3 should be highlighted in red to indicate they are problem rooms.
+- Rooms with a rating of 1-2 should be highlighted in red to indicate they are problem rooms.
 - The application must support filtering checks by date and searching for blocks by number or by resident name.
 - All data, including resident information and ratings, must be stored on a server.
 - There should be a separate login system for floor monitors (one per floor) who are responsible for submitting the ratings.
 - A comprehensive admin panel is required for a superuser who can perform all actions, including adding/removing residents, editing ratings, and more.
 - The admin panel must include a feature to track logins of floor monitors to prevent account sharing.
 - The admin needs the ability to export reports of all ratings from each floor in PDF format.
-- An additional feature requested is a schedule for buses and trolleybuses at the nearest stop (Дом правосудия in Minsk), with a humorous message like You better move! if a bus is arriving soon.
-- The user also provided a complete list of residents to be populated into the system.
+- An additional feature requested is a schedule for buses at the nearest stop (Дом правосудия in Minsk), with a humorous message like You better move! if a bus is arriving soon.
+- The user also provided a complete list of 654 residents to be populated into the system.
 
 **User's preferred language**:
 The user's primary language is **Russian**. The next agent MUST respond exclusively in Russian.
 
 **what currently exists?**
-A full-stack application has been developed with a FastAPI backend, a React frontend, and a MongoDB database. The backend includes API endpoints for authentication (admin, floor monitors), CRUD operations for floors, blocks, residents, and ratings. The frontend consists of several pages for displaying floors, blocks, resident details, a login page, an admin panel, and a transport schedule page. All 654 residents provided by the user have been successfully loaded into the database. Credentials for the administrator and all 8 floor monitors have been generated and are stored in . The application's public view allows anyone to browse floors and rooms, while rating and administrative tasks require authentication.
+The full-stack application (FastAPI, React, MongoDB) has been fully developed and deployed to the user's production Contabo VPS. The deployment includes Docker containers for the frontend, backend, and database, managed by docker-compose, with Nginx as a reverse proxy and a live Let's Encrypt SSL certificate configured for the user's DuckDNS domain. The production database has been populated with all 654 residents and user accounts for the administrator and all floor managers. The application features include authentication, floor/block/resident browsing, a redesigned rating system, date filters, global search, a live transport schedule, and a Telegram bot integration webhook.
 
 **Last working item**:
--   **Last item agent was working:** The agent was implementing user-requested improvements for the floor monitor experience. This included automatically redirecting monitors to their assigned floor page after login and redesigning the UI for the rating submission modal to make it look more professional.
--   **Status:** IN PROGRESS
+-   **Last item agent was working:** The user specified that the live transport schedule feature, which uses the Yandex Maps API, needs to be corrected. It should fetch data *only for buses* and specifically for the Дом правосудия stop on Semashko Street in Minsk. The agent had just received this clarification and was about to implement the fix.
+-   **Status:** NOT STARTED
 -   **Agent Testing Done:** N
--   **Which testing method agent to use?** both
+-   **Which testing method agent to use?** backend testing agent
 -   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
--   **Issue 1:** Complete and test the improved floor monitor user experience. (Priority: P0)
+-   **Issue 1:** Correct the Yandex Maps API integration for the transport schedule. (Priority: P0)
 
 **Issues Detail:**
 -   **Issue 1:**
-    -   **Attempted fixes:** The agent has written the code to handle the redirection in  and redesigned the rating modal in . However, these changes have not been tested yet.
+    -   **Attempted fixes:** The agent successfully integrated the Yandex Maps API, but the user found the data to be incorrect for their needs.
     -   **Next debug checklist:**
-        1.  Restart the backend and frontend services using nginx-code-proxy: stopped
-mongodb: stopped
-backend: stopped
-backend: started
-mongodb: started
-nginx-code-proxy: started
-code-server: started.
-        2.  Test the login functionality for a floor monitor (e.g.,  from ) and verify that the user is automatically redirected to their floor's page (e.g., ).
-        3.  Navigate to a block and click the Rate button to verify that the new, redesigned modal window appears correctly.
-        4.  Submit a rating using the new modal, including a date, and confirm that the data is saved correctly via an API check.
-    -   **Why fix this issue and what will be achieved with the fix?** This will complete a direct user request, improving the workflow for floor monitors and providing a better user interface.
-    -   **Status:** IN PROGRESS
+        1.  In , locate the  function.
+        2.  Use web search or the Yandex API documentation to find the exact stop ID for Дом правосудия on Semashko Street.
+        3.  Modify the API call to use this specific stop ID.
+        4.  Add a filter to the logic to process and return only transport of .
+        5.  Restart the backend service.
+        6.  Test the  endpoint using  to confirm it returns only bus schedules for the correct stop.
+        7.  Since the application is deployed, these changes will need to be pushed to the user's production server. The next agent should be prepared to guide the user through updating the running Docker container.
+    -   **Why fix this issue and what will be achieved with the fix?** This will fulfill the user's explicit requirement for accurate, live bus data from the correct location, making the feature useful.
+    -   **Status:** NOT STARTED
     -   **Is recurring issue?** N
-    -   **Should Test frontend/backend/both after fix?** Both
+    -   **Should Test frontend/backend/both after fix?** Backend
     -   **Blocked on other issue:** None
 
 **In progress Task List**:
--   **Task 1:** Finalize Floor Monitor UX Improvements
-    -   **Where to resume:** The necessary code has been written in  and . The task is ready for testing and validation.
-    -   **What will be achieved with this?** A smoother, more intuitive workflow for floor monitors and a more polished UI.
-    -   **Status:** IN PROGRESS
-    -   **Should Test frontend/backend/both after fix?** Both
-    -   **Blocked on something:** None
+-   None.
 
 **Upcoming and Future Tasks**
 **Upcoming Tasks:**
--   **(P0) Implement Logout Functionality:** Add a Logout button for authenticated users (monitors and admin) and implement the logic to clear the authentication token from the client side.
--   **(P1) Implement Admin Login Tracking View:** The backend is already logging login attempts. The frontend  page needs to be updated to fetch and display this login history to the administrator.
--   **(P2) Implement Admin PDF Export:** Add the functionality for the admin to export rating reports as PDF files. This requires implementing the Export to PDF button logic in  and potentially adding a new backend endpoint and a PDF generation library.
--   **(P3) Implement Search and Filter:** Implement the logic for filtering checks by date and searching for blocks by number or resident name.
+-   **(P1) Implement Admin Login Tracking View:** The backend already logs login attempts. The frontend  page needs to be updated to fetch data from  and display this history to the administrator.
+-   **(P2) Implement Admin PDF Export:** Add the Export to PDF button and associated logic in . This will likely require a new backend endpoint to generate the report using .
 
 **Future Tasks:**
--   **Integrate with Telegram Bot:** Connect the web application to a Telegram bot using the provided token.
--   **Integrate Yandex Maps API:** Fetch live transport data from the Yandex Maps API instead of using the current hardcoded schedule.
--   **Deployment:** Plan and execute the deployment of the application to a Contabo VPS using Duck DNS.
+-   **Enhance Telegram Bot:** Add features like automatic notifications for rooms with poor ratings (1 or 2).
 
 **Completed work in this session**
--   **Application Skeleton:** Set up a full-stack project with a FastAPI backend and React frontend.
--   **Database and API:**
-    -   Defined MongoDB schemas for all necessary data models (, , , , etc.).
-    -   Created a comprehensive set of API endpoints for authentication and all CRUD operations.
-    -   Implemented a batch-creation endpoint () for efficient data loading.
--   **Data Population:**
-    -   Generated and stored credentials for the admin and 8 floor monitors in .
-    -   Parsed and successfully loaded the data for all 654 residents provided by the user.
--   **Frontend Development:**
-    -   Built the main pages: , , , , , and .
-    -   Implemented client-side routing using .
-    -   Created a public-facing view for general users and a separate authenticated view for monitors/admin.
-    -   Implemented the functionality for floor monitors to submit ratings.
--   **UI/UX Refinements:**
-    -   Removed the Made With Emergent badge.
-    -   Adjusted the login button's appearance to be less prominent.
-    -   Modified the  page to hide the resident list for the Common Space area.
-    -   Corrected the block numbering scheme to the , , etc., format as requested.
-    -   Added a date picker to the rating submission form.
-    -   Hardcoded the transport schedule for the Дом правосудия bus stop in Minsk.
+-   **Full Production Deployment:**
+    -   Guided the user through deploying the entire application to their Contabo VPS.
+    -   Created and debugged s, , and .
+    -   Resolved numerous build and runtime errors related to Python (, , ) and Node.js (, , ) dependencies.
+    -   Successfully configured DuckDNS and obtained/installed a Let's Encrypt SSL certificate.
+-   **Data Population on Production:**
+    -   Created and executed scripts on the user's server to populate the production MongoDB with all 654 residents and create accounts for the admin and 8 floor managers.
+-   **Feature Implementation & UI Refinements:**
+    -   Redesigned the rating modals for a more professional look.
+    -   Implemented a global search bar on the main page for residents and blocks.
+    -   Added a single-date filter to the floor pages.
+    -   Corrected the rating color logic to show red only for scores 1-2.
+    -   Integrated the Yandex Maps API to provide a live transport schedule.
+    -   Set up the initial Telegram bot integration and configured the production webhook.
+    -   Fixed a timezone issue to ensure the transport schedule displays in Minsk local time (UTC+3).
 
 **Earlier issues found/mentioned but not fixed**
--   **Issue 1: Logout Functionality Missing:** The user requested a logout button for authenticated sessions. This critical feature has not been implemented yet.
-    -   **Debug checklist:** Add a logout button to the UI (e.g., in a new  component for authenticated users). On click, remove the JWT token from  and redirect the user to the login page.
-    -   **Why to solve this issue and what will be achieved with this?** It is a fundamental security and usability feature for any application with authentication.
-    -   **Should Test frontend/backend/both after fix:** Frontend
-    -   **Is recurring issue?** N
--   **Issue 2: Admin Login Tracking View:** The user requested to see a log of who logs into the system. The backend is ready, but the admin panel frontend does not display this data.
-    -   **Debug checklist:** In , fetch data from the  endpoint and display it in a table.
-    -   **Why to solve this issue and what will be achieved with this?** Fulfills a direct user requirement for security monitoring.
-    -   **Should Test frontend/backend/both after fix:** Frontend
-    -   **Is recurring issue?** N
+-   **Issue 1: Admin Login Tracking View:** The backend endpoint exists, but the frontend in  has not been built to display the data.
+-   **Issue 2: Admin PDF Export:** This feature has not been started.
 
 **Known issue recurrence from previous fork**
 -   N/A
@@ -113,80 +88,80 @@ code-server: started.
 
 
 **Key Technical Concepts**
--   **Backend:** FastAPI, Pydantic, MongoDB (with  for async operations), JWT for authentication.
--   **Frontend:** React, React Router, Axios, TailwindCSS, Shadcn/UI.
--   **Database:** MongoDB.
+-   **Backend:** FastAPI, Pydantic, MongoDB (Motor), JWT
+-   **Frontend:** React, React Router, Axios, TailwindCSS, Shadcn/UI
+-   **Deployment:** Docker, Docker Compose, Nginx (as reverse proxy), Let's Encrypt (Certbot), Duck DNS
 
 **key DB schema**
--   **users**: {, , : ['admin', 'starosta'], : integer (for 'starosta')}
--   **residents**: {, : integer, : ['small', 'big']}
--   **ratings**: {, , , Tue Mar 10 14:17:41 UTC 2026, : string}
--   **login_attempts**: {, , , : boolean}
+-   **users**: {, , : ['admin', 'floor_manager'], }
+-   **residents**: {, , , }
+-   **ratings**: {, , , Wed Mar 11 14:48:22 UTC 2026, }
+-   **login_attempts**: {, , , }
 
 **changes in tech stack**
--   None.
+-   None in the core application. The project now includes a full production deployment stack using Docker and Nginx.
 
 **All files of reference**
--   : Contains all backend logic, including models, API endpoints, and business logic.
--   : Defines the application's routing structure.
--   : Handles user authentication and the new redirection logic.
--   : Displays room details and contains the redesigned rating submission modal.
--   : The administration panel, pending implementation of login tracking and PDF export.
--   : The main HTML file where the Made with Emergent badge was removed.
--   : Contains the generated login credentials for the admin and floor monitors.
+-   : Contains all business logic, including the transport schedule API that needs correction.
+-   : Implemented the global search UI.
+-   : Contains the redesigned rating modals.
+-   : Implemented the date filter UI.
+-   : Defines all production services and their configuration.
+-   : Nginx configuration for the production reverse proxy.
+-   : Build instructions for the backend container.
+-   : Build instructions for the frontend container.
 
 **Areas that need refactoring**:
--   None at this time.
+-   The  file has grown to over 1000 lines and contains all models, API endpoints, and business logic. It should be refactored into a modular structure (e.g., , , ).
 
 **key api endpoints**
--   : User login.
--   : Get current authenticated user's details.
--   : Get all blocks for a given floor.
--   : Get details for a specific block.
--   : Submit a new rating.
+-   : Global search for residents and blocks.
+-   : Live transport schedule (needs correction).
+-   : Webhook for the Telegram bot.
 -   : (Admin only) Get login history.
--   : Get the hardcoded transport schedule.
 
 **Critical Info for New Agent**
--   **Language:** All user-facing communication and code comments (where applicable) must be in **Russian**.
--   **Preview Environment:** The preview environment is unstable and frequently fails to load. Do not rely on screenshots for verification. Use  to test backend endpoints directly and check frontend build logs in the console to confirm successful compilation.
--   **Credentials:** All necessary credentials for testing (admin and floor monitors) are available in .
--   **Data:** The database is already populated with 654 residents. No further mass data loading is required unless requested by the user.
+-   **The application is LIVE on the user's production server.** The previous agent guided the user through a complex deployment process. Any future code changes will need to be applied to the live server, which may involve rebuilding and restarting Docker containers.
+-   The deployment process was manual and required significant troubleshooting. The Dockerfiles and configuration in the  folder were fixed iteratively. Be prepared to guide the user through similar steps if updates are needed.
+-   The production database is separate from the development one and has been fully populated with resident and user data.
+-   The immediate next step is to fix the transport schedule feature as per the user's latest request.
 
 **documents and test reports created in this job**
--   
+-    (Updated)
+-    (New directory with all deployment artifacts)
 -   
 
 **Last 10 User Messages and any pending HUMAN messages**
-10. **Request:** The app should be for both residents (view-only) and monitors (login required). **Status:** Completed.
-9.  **Request:** Change block numbering (e.g., 201, 202) and use bus data for Дом правосудия. **Status:** Completed.
-8.  **Request:** Acknowledged to continue.
-7.  **Request:** Remove top logout button, make monitor login less obvious, and remove Made With Emergent badge. **Status:** Completed.
-6.  **Request:** Generate admin/monitor credentials and adjust UI for common space. **Status:** Completed.
-5.  **Request:** Add admin login tracking, a logout button, and provided a list of all residents. **Status:** Partially completed (residents loaded; login tracking and logout button are pending).
-4.  **Request:** Confirmed to proceed with loading residents.
-3.  **Request:** Proceed with the implementation.
-2.  **Request:** Add a date selection field for submitting ratings. **Status:** Completed.
-1.  **Request:** Improve the rating UI for monitors and auto-redirect them to their floor after login. **Status:** In Progress.
+10. **User:** how can I make the schedule relevant to local time? (Resolved: agent fixed the timezone to Minsk time).
+9.  **User:** and where are all the residents? (Resolved: agent guided the user to populate the production database).
+8.  **User:** whats next?" (Resolved: agent summarized the completed deployment).
+7.  **User:** Provides full list of 654 residents to be loaded into the production database. (Resolved).
+6.  **User:** Provides deployment credentials (SSH, DuckDNS token). (Actioned).
+5.  **User:** "lets go in order. (Actioned: agent started implementing features sequentially).
+4.  **User:** red only for 1-2 and I dont need a date range, just a single date for the check." (Resolved: agent updated the UI and logic).
+3.  **User:** "redo the rating menu for monitors and add a date filter to each floors menu. (Resolved).
+2.  **User:** Agrees to the agent's plan.
+1.  **User:** Dom pravosudiya... I need this exact stop and the schedule for the buses that run from it. (Pending: This is the highest priority task).
 
 **Project Health Check:**
--   **Broken:** The application's preview URL is consistently unreliable and often fails to load.
--   **Mocked:** The transport schedule data is currently hardcoded in the backend as per the user's initial instructions.
+-   **Broken:** The transport schedule feature does not meet the user's specific requirements (wrong stop/vehicle type).
+-   **Mocked:** None.
 
 **3rd Party Integrations**
--   **Yandex Maps API:** A playbook was received, but the integration has not been implemented. This is planned for a future stage to provide live transport data.
--   **Telegram Bot API:** A playbook was received, but the integration is pending for a future stage.
+-   **Telegram Bot API:** Integrated. The webhook is set to the production URL.
+-   **Yandex Maps API:** Integrated for live transport data. Requires correction to use the right stop ID and filter for buses.
 
 **Testing status**
--   **Testing agent used after significant changes:** NO
+-   **Testing agent used after significant changes:** YES, once for the UI redesign.
 -   **Troubleshoot agent used after agent stuck in loop:** NO
 -   **Test files created:** []
 -   **Known regressions:** []
 
 **Credentials to test flow:**
-All credentials for the admin and floor monitors can be found in the file .
+Credentials for the live, deployed application are:
+-   **Admin:**  / 
+-   **Floor Managers (example):**  / 
 
 **What agent forgot to execute**
--   **Logout Button:** A user-requested logout button for authenticated sessions was not implemented. This is a critical missing piece of the authentication flow.
--   **Admin Login Tracking (Frontend):** The frontend for the admin panel was not updated to display the login history, even though the backend is ready.
--   **PDF Export Functionality:** The user requested an export-to-PDF feature for the admin, which has not been implemented.</analysis>
+-   **Admin Login Tracking (Frontend):** The UI for viewing login history in the admin panel is still unimplemented.
+-   **PDF Export Functionality:** The admin feature for exporting reports to PDF has not been implemented.</analysis>

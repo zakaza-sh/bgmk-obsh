@@ -45,7 +45,7 @@ echo -e "${YELLOW}Step 4: Setup Duck DNS${NC}"
 mkdir -p /opt/duckdns
 cat > /opt/duckdns/duck.sh << 'DUCKDNS'
 #!/bin/bash
-echo url="https://www.duckdns.org/update?domains=bgmk-obsh&token=ddd1b399-0607-4cce-82c2-8632c61c29bc&ip=" | curl -k -o /opt/duckdns/duck.log -K -
+echo url="https://www.duckdns.org/update?domains=bgmk-obsh&token=sanitary-check&ip=" | curl -k -o /opt/duckdns/duck.log -K -
 DUCKDNS
 chmod +x /opt/duckdns/duck.sh
 

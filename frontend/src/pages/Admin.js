@@ -9,7 +9,8 @@ import {
   Eye,
   Trash2,
   FileText,
-  LogOut 
+  LogOut,
+  X
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -193,20 +194,14 @@ const Admin = () => {
     }
   };
 
+  const [activityModal, setActivityModal] = useState(null);
+
   const handleViewActivity = async (userId) => {
     try {
       const response = await axios.get(`${API}/admin/activity/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      const activity = response.data;
-      const historyText = activity.login_history
-        .map(h => `${new Date(h.timestamp).toLocaleString('ru-RU')} - ${h.ip}`)
-        .join('\n');
-      
-      alert(`Активность пользователя ${activity.username}:\n\nПоследний вход: ${
-        activity.last_login ? new Date(activity.last_login).toLocaleString('ru-RU') : 'Никогда'
-      }\n\nИстория входов:\n${historyText || 'Нет данных'}`);
+      setActivityModal(response.data);
     } catch (error) {
       console.error('Error fetching activity:', error);
       toast.error('Ошибка получения активности');
@@ -623,14 +618,51 @@ const Admin = () => {
                         <p className="text-xs font-medium mb-1">Последние 5 входов:</p>
                         {u.login_history.slice(-5).reverse().map((h, i) => (
                           <div key={i} className="text-xs text-muted-foreground">
-                            • {new Date(h.timestamp).toLocaleString('ru-RU')} - {h.ip}
+                            - {new Date(h.timestamp).toLocaleString('ru-RU')} — {h.ip}
                           </div>
                         ))}
                       </div>
                     )}
                   </Card>
                 ))}
+                {users.filter(u => u.role === 'floor_manager').length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    Нет старост этажей
+                  </p>
+                )}
               </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Activity Modal */}
+        {activityModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setActivityModal(null)}>
+            <Card className="max-w-md w-full p-6 rounded-2xl max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()} data-testid="activity-modal">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">{activityModal.username}</h2>
+                <Button variant="ghost" size="sm" onClick={() => setActivityModal(null)} data-testid="close-activity-modal">
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+              <div className="text-sm text-muted-foreground mb-4">
+                Последний вход: {activityModal.last_login 
+                  ? new Date(activityModal.last_login).toLocaleString('ru-RU') 
+                  : 'Никогда'}
+              </div>
+              <h3 className="text-sm font-semibold mb-2">История входов</h3>
+              {activityModal.login_history && activityModal.login_history.length > 0 ? (
+                <div className="space-y-1">
+                  {[...activityModal.login_history].reverse().map((h, i) => (
+                    <div key={i} className="flex justify-between text-xs py-1.5 px-2 rounded bg-muted/30">
+                      <span>{new Date(h.timestamp).toLocaleString('ru-RU')}</span>
+                      <span className="text-muted-foreground">{h.ip}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Нет данных</p>
+              )}
             </Card>
           </div>
         )}
