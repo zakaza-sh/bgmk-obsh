@@ -1002,6 +1002,13 @@ async def telegram_webhook(request: Request):
 async def _handle_bot_command(text: str, chat_id: int):
     """Process bot command in background - optimized for high load"""
     try:
+        # Сохраняем chat_id для рассылок
+        await db.telegram_users.update_one(
+            {"chat_id": chat_id},
+            {"$set": {"chat_id": chat_id, "last_interaction": datetime.now(timezone.utc).isoformat()}},
+            upsert=True
+        )
+        
         if text.startswith('/start'):
             webapp_url = os.environ.get('WEBAPP_URL', '')
             await send_telegram_message(
