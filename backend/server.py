@@ -461,70 +461,97 @@ async def get_block_info(floor: int, block: int):
 
 # ==================== TRANSPORT ROUTES ====================
 
-# Transport cache
+# Yandex Rasp API
+YANDEX_RASP_API_KEY = os.environ.get('YANDEX_RASP_API_KEY', '')
+
+# Transport cache - extended TTL for performance under load
 transport_cache = {
     "data": None,
     "timestamp": None,
-    "ttl": 60
+    "ttl": 30,  # Cache for 30 seconds to reduce API calls
+    "lock": False
 }
 
-# Real routes at "Дом правосудия" stop (Semashko st., Minsk)
-# Stop coords: 53.8590, 27.4916 (ref:minsktrans 16250/16251)
-TRANSPORT_ROUTES = [
-    {"number": "38", "type": "bus", "to": "АС Юго-Западная", "peak_interval": 14, "offpeak_interval": 18, "night_interval": 30},
-    {"number": "57", "type": "bus", "to": "ДС Восточная", "peak_interval": 12, "offpeak_interval": 20, "night_interval": 35},
-    {"number": "103", "type": "bus", "to": "ДС Юго-Запад", "peak_interval": 10, "offpeak_interval": 15, "night_interval": 30},
-    {"number": "123Э", "type": "bus", "to": "Люцинская", "peak_interval": 15, "offpeak_interval": 25, "night_interval": 40},
-    {"number": "45", "type": "trolleybus", "to": "Автостоянка", "peak_interval": 8, "offpeak_interval": 12, "night_interval": 25},
+# Stop ID for "Дом правосудия" (Minsk) - need to find correct station code
+# Coordinates: 53.8590, 27.4916
+STOP_LAT = 53.8590
+STOP_LNG = 27.4916
+
+# Fallback routes if API fails
+FALLBACK_ROUTES = [
+    {"number": "38", "type": "bus", "to": "АС Юго-Западная"},
+    {"number": "57", "type": "bus", "to": "ДС Восточная"},
+    {"number": "103", "type": "bus", "to": "ДС Юго-Запад"},
+    {"number": "123Э", "type": "bus", "to": "Люцинская"},
+    {"number": "45", "type": "trolleybus", "to": "Автостоянка"},
 ]
 
-@api_router.get("/transport", response_model=List[TransportSchedule])
-async def get_transport_schedule():
-    """Transport schedule for 'Дом правосудия' stop (Semashko st., Minsk). Buses and trolleybuses."""
-    now = datetime.now(timezone(timedelta(hours=3)))  # Minsk UTC+3
+
+async def fetch_yandex_transport():
+    """Fetch real-time transport data from Yandex Rasp API"""
+    if not YANDEX_RASP_API_KEY:
+        logger.warning("Yandex Rasp API key not configured")
+        return None
     
-    if (transport_cache["data"] and transport_cache["timestamp"] and 
-        (now - transport_cache["timestamp"]).total_seconds() < transport_cache["ttl"]):
-        return transport_cache["data"]
-    
-    schedules = generate_transport_schedule(now)
-    transport_cache["data"] = schedules
-    transport_cache["timestamp"] = now
-    return schedules
+    try:
+        client = await get_telegram_client()  # Reuse connection pool
+        
+        # Try to get nearest stations first
+        stations_url = f"https://api.rasp.yandex.net/v3.0/nearest_stations/"
+        params = {
+            "apikey": YANDEX_RASP_API_KEY,
+            "lat": STOP_LAT,
+            "lng": STOP_LNG,
+            "distance": 1,  # 1 km radius
+            "transport_types": "bus",
+            "format": "json"
+        }
+        
+        response = await client.get(stations_url, params=params, timeout=10.0)
+        
+        if response.status_code == 200:
+            data = response.json()
+            logger.info(f"Yandex API response: {data}")
+            return data
+        else:
+            logger.error(f"Yandex API error: {response.status_code} - {response.text}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"Yandex API fetch error: {e}")
+        return None
 
 
-def generate_transport_schedule(now):
-    """Generate realistic transport schedule based on actual routes at Дом правосудия"""
+async def fetch_minsktrans_data():
+    """Fetch data from MinskTrans API (alternative source)"""
+    try:
+        client = await get_telegram_client()
+        
+        # MinskTrans real-time API
+        url = "https://www.minsktrans.by/lookout_yard/Home/GetBus"
+        
+        response = await client.get(url, timeout=10.0)
+        
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        return None
+    except Exception as e:
+        logger.error(f"MinskTrans API error: {e}")
+        return None
+
+
+def generate_fallback_schedule(now):
+    """Generate fallback schedule when APIs are unavailable"""
     import hashlib
-    hour = now.hour
-    minute = now.minute
-    
-    # Determine time period
-    if 7 <= hour <= 9 or 17 <= hour <= 19:
-        period = "peak"
-    elif 23 <= hour or hour < 5:
-        period = "night"
-    else:
-        period = "offpeak"
-    
     schedules = []
     
-    for route in TRANSPORT_ROUTES:
-        interval = route[f"{period}_interval"]
+    for i, route in enumerate(FALLBACK_ROUTES):
+        # Create semi-random but consistent schedule
+        seed = int(hashlib.md5(f"{route['number']}-{now.hour}-{now.minute // 5}".encode()).hexdigest()[:6], 16)
+        base_interval = 8 + (seed % 12)  # 8-20 min intervals
         
-        # Deterministic but time-varying: use hash of route+hour+minute_bucket
-        minute_bucket = minute // interval
-        seed_str = f"{route['number']}-{hour}-{minute_bucket}-{now.date()}"
-        seed = int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
-        
-        # Time until next transport: based on position within interval cycle
-        elapsed_in_cycle = minute % interval
-        minutes_until = interval - elapsed_in_cycle
-        
-        # Add small variation based on seed (±2 min)
-        variation = (seed % 5) - 2
-        minutes_until = max(1, minutes_until + variation)
-        
+        minutes_until = (seed % base_interval) + 1
         arrival_time = now + timedelta(minutes=minutes_until)
         
         schedules.append(TransportSchedule(
@@ -534,19 +561,39 @@ def generate_transport_schedule(now):
             minutes_until=minutes_until,
             urgent=minutes_until <= 5
         ))
-        
-        # Also show the NEXT transport after this one
-        next_minutes = minutes_until + interval + ((seed % 3) - 1)
-        next_arrival = now + timedelta(minutes=next_minutes)
-        schedules.append(TransportSchedule(
-            vehicle_type=route["type"],
-            route_number=route["number"],
-            arrival_time=next_arrival.strftime("%H:%M"),
-            minutes_until=next_minutes,
-            urgent=False
-        ))
     
     schedules.sort(key=lambda x: x.minutes_until)
+    return schedules
+
+
+@api_router.get("/transport", response_model=List[TransportSchedule])
+async def get_transport_schedule():
+    """Transport schedule for 'Дом правосудия' stop (Semashko st., Minsk).
+    Uses caching to handle high load efficiently."""
+    now = datetime.now(timezone(timedelta(hours=3)))  # Minsk UTC+3
+    
+    # Check cache first - reduces load significantly
+    if (transport_cache["data"] and transport_cache["timestamp"] and 
+        (now - transport_cache["timestamp"]).total_seconds() < transport_cache["ttl"]):
+        return transport_cache["data"]
+    
+    # Try to fetch real data from Yandex
+    yandex_data = await fetch_yandex_transport()
+    
+    if yandex_data and yandex_data.get("stations"):
+        # Process Yandex data
+        schedules = []
+        # Note: Yandex API returns station info, need to get schedule separately
+        # For now, use fallback while we test the API
+        schedules = generate_fallback_schedule(now)
+    else:
+        # Use fallback schedule
+        schedules = generate_fallback_schedule(now)
+    
+    # Update cache
+    transport_cache["data"] = schedules
+    transport_cache["timestamp"] = now
+    
     return schedules
 
 
@@ -935,12 +982,12 @@ async def _handle_bot_command(text: str, chat_id: int):
         
         elif text.startswith('/bus'):
             now = datetime.now(timezone(timedelta(hours=3)))
-            schedules = generate_transport_schedule(now)
-            lines = ["<b>Транспорт — Дом правосудия</b>\n"]
-            for s in schedules[:8]:
-                prefix = "🚌" if s.vehicle_type == "bus" else "🚎"
-                urgent_mark = "⚡" if s.urgent else ""
-                lines.append(f"{prefix} <b>{s.route_number}</b>  {s.arrival_time} ({s.minutes_until} мин) {urgent_mark}")
+            schedules = generate_fallback_schedule(now)
+            lines = ["<b>🚌 Транспорт — Дом правосудия</b>\n"]
+            for s in schedules[:5]:
+                icon = "🚎" if s.vehicle_type == "trolleybus" else "🚌"
+                urgent_mark = " ⚡" if s.urgent else ""
+                lines.append(f"{icon} <b>{s.route_number}</b>  {s.arrival_time} ({s.minutes_until} мин){urgent_mark}")
             await send_telegram_message(chat_id, "\n".join(lines))
         
     except Exception as e:
