@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Shield, Search, X, Users, MapPin, ChevronRight } from 'lucide-react';
+import { LogOut, Shield, Search, X, Users, MapPin, ChevronRight, Building2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +22,6 @@ const FloorsList = () => {
     ? [user.floor_number] 
     : [2, 3, 4, 5, 6, 7, 8, 9];
 
-  // Search with debounce
   useEffect(() => {
     if (searchQuery.length < 2) {
       setSearchResults([]);
@@ -71,7 +70,7 @@ const FloorsList = () => {
     setSelectedFloor(floor);
     setTimeout(() => {
       navigate(`/floor/${floor}`);
-    }, 200);
+    }, 150);
   };
 
   const handleLogout = () => {
@@ -85,52 +84,51 @@ const FloorsList = () => {
     setSearchQuery('');
   };
 
-  // Floor colors for visual variety
-  const floorColors = {
-    2: 'from-blue-500 to-blue-600',
-    3: 'from-emerald-500 to-emerald-600',
-    4: 'from-violet-500 to-violet-600',
-    5: 'from-orange-500 to-orange-600',
-    6: 'from-pink-500 to-pink-600',
-    7: 'from-cyan-500 to-cyan-600',
-    8: 'from-amber-500 to-amber-600',
-    9: 'from-indigo-500 to-indigo-600',
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50">
-      <div className="max-w-md mx-auto min-h-screen md:max-w-lg relative">
-        {/* Header with Logo */}
-        <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200 p-6 sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-            <img 
-              src="/logo-bgmk.jpg" 
-              alt="БГМК" 
-              className="w-16 h-16 rounded-2xl object-cover shadow-lg"
-            />
+    <div className="min-h-screen bg-[#0a0f1c]">
+      {/* Background gradient */}
+      <div className="fixed inset-0 bg-gradient-to-br from-[#0a0f1c] via-[#111827] to-[#0a0f1c]"></div>
+      <div className="fixed inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.02%22%3E%3Cpath d=%22M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
+      
+      <div className="relative max-w-lg mx-auto min-h-screen">
+        {/* Header */}
+        <div className="p-6 pb-4">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative">
+              <div className="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-2xl blur opacity-30"></div>
+              <img 
+                src="/logo-bgmk.jpg" 
+                alt="БГМК" 
+                className="relative w-16 h-16 rounded-xl object-cover border border-white/10"
+              />
+            </div>
             <div className="flex-1">
-              <h1 className="text-xl font-bold text-slate-800 tracking-tight">
+              <h1 className="text-xl font-semibold text-white tracking-tight">
                 Общежитие БГМК
               </h1>
-              <p className="text-sm text-slate-500">
-                Санитарный контроль
+              <p className="text-sm text-slate-400">
+                Система санитарного контроля
               </p>
-              {user && (
-                <p className="text-xs text-teal-600 font-medium mt-0.5">
-                  {user.role === 'admin' ? '👑 Администратор' : `📋 Этаж ${user.floor_number}`}
-                </p>
-              )}
             </div>
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setShowSearch(!showSearch)}
-              className="rounded-xl hover:bg-slate-100"
-              data-testid="search-toggle-button"
+              className="rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/10"
             >
-              <Search className="w-5 h-5 text-slate-600" />
+              <Search className="w-5 h-5" />
             </Button>
           </div>
+
+          {/* User badge */}
+          {user && (
+            <div className="flex items-center gap-2 mb-6 p-3 rounded-xl bg-white/5 border border-white/10">
+              <div className={`w-2 h-2 rounded-full ${user.role === 'admin' ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+              <span className="text-sm text-slate-300">
+                {user.role === 'admin' ? 'Администратор' : `Староста ${user.floor_number} этажа`}
+              </span>
+            </div>
+          )}
 
           {/* Search Panel */}
           <AnimatePresence>
@@ -139,69 +137,65 @@ const FloorsList = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
+                className="mb-6 overflow-hidden"
               >
-                <div className="mt-4 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
                   <Input
                     type="text"
                     placeholder="Поиск по номеру блока или ФИО..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-10 bg-white border-slate-200"
+                    className="pl-11 pr-11 h-12 bg-white/5 border-white/10 text-white placeholder:text-slate-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
                     autoFocus
-                    data-testid="global-search-input"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-white"
                     >
                       <X className="w-4 h-4" />
                     </button>
                   )}
                 </div>
 
-                {/* Search Results */}
                 {searchQuery.length >= 2 && (
-                  <div className="mt-3 bg-white border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto shadow-lg">
+                  <div className="mt-3 bg-[#151b2e] border border-white/10 rounded-xl overflow-hidden max-h-64 overflow-y-auto">
                     {isSearching ? (
-                      <div className="p-4 text-center text-slate-500">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-teal-500 mx-auto"></div>
+                      <div className="p-4 text-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-cyan-500 border-t-transparent mx-auto"></div>
                       </div>
                     ) : searchResults.length === 0 ? (
                       <div className="p-4 text-center text-slate-500 text-sm">
                         Ничего не найдено
                       </div>
                     ) : (
-                      <div className="divide-y divide-slate-100">
+                      <div className="divide-y divide-white/5">
                         {searchResults.slice(0, 10).map((result, idx) => (
                           <button
                             key={idx}
                             onClick={() => handleSearchResultClick(result)}
-                            className="w-full p-3 text-left hover:bg-slate-50 transition-colors flex items-center gap-3"
-                            data-testid={`search-result-${idx}`}
+                            className="w-full p-3 text-left hover:bg-white/5 transition-colors flex items-center gap-3"
                           >
                             {result.type === 'block' ? (
                               <>
-                                <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
-                                  <MapPin className="w-4 h-4 text-teal-600" />
+                                <div className="w-10 h-10 bg-cyan-500/10 border border-cyan-500/20 rounded-lg flex items-center justify-center">
+                                  <MapPin className="w-4 h-4 text-cyan-400" />
                                 </div>
                                 <div>
-                                  <div className="font-medium text-slate-800">Блок {result.blockNumber}</div>
+                                  <div className="font-medium text-white">Блок {result.blockNumber}</div>
                                   <div className="text-xs text-slate-500">{result.floor} этаж</div>
                                 </div>
                               </>
                             ) : (
                               <>
-                                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
-                                  <Users className="w-4 h-4 text-slate-500" />
+                                <div className="w-10 h-10 bg-white/5 border border-white/10 rounded-lg flex items-center justify-center">
+                                  <Users className="w-4 h-4 text-slate-400" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-slate-800 truncate">{result.full_name}</div>
+                                  <div className="font-medium text-white truncate">{result.full_name}</div>
                                   <div className="text-xs text-slate-500">
-                                    Блок {result.blockNumber} • {result.room_type === 'small' ? 'Малая' : result.room_type === 'large' ? 'Большая' : 'Общая'}
+                                    Блок {result.blockNumber}
                                   </div>
                                 </div>
                               </>
@@ -218,97 +212,98 @@ const FloorsList = () => {
         </div>
 
         {/* Content */}
-        <div className="p-5 space-y-5">
-          {/* Admin panel button - only for admin */}
+        <div className="px-6 space-y-6">
+          {/* Admin panel button */}
           {user?.role === 'admin' && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Button
+              <button
                 onClick={() => navigate('/admin')}
-                className="w-full h-14 text-base rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-500/30 border-0"
-                data-testid="admin-panel-button"
+                className="w-full group relative overflow-hidden rounded-2xl p-[1px] bg-gradient-to-r from-amber-500/50 via-orange-500/50 to-amber-500/50"
               >
-                <Shield className="w-5 h-5 mr-2" />
-                Админ-панель
-                <ChevronRight className="w-5 h-5 ml-auto" />
-              </Button>
+                <div className="relative flex items-center justify-between p-4 rounded-2xl bg-[#151b2e] group-hover:bg-[#1a2235] transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 border border-amber-500/30 flex items-center justify-center">
+                      <Shield className="w-5 h-5 text-amber-400" />
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium text-white">Панель администратора</div>
+                      <div className="text-xs text-slate-500">Управление системой</div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-slate-500 group-hover:text-amber-400 transition-colors" />
+                </div>
+              </button>
             </motion.div>
           )}
 
           {/* Floors Section */}
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider px-1">
-              Выберите этаж
-            </h2>
-            <div className="grid grid-cols-2 gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Building2 className="w-4 h-4 text-slate-500" />
+              <span className="text-sm font-medium text-slate-400 uppercase tracking-wider">
+                Этажи
+              </span>
+            </div>
+            
+            <div className="grid grid-cols-4 gap-3">
               {floors.map((floor, index) => (
-                <motion.div
+                <motion.button
                   key={floor}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
+                  transition={{ delay: index * 0.03 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleFloorClick(floor)}
+                  className={`
+                    relative aspect-square rounded-2xl overflow-hidden
+                    bg-gradient-to-br from-[#1e2a45] to-[#151b2e]
+                    border border-white/10 hover:border-cyan-500/50
+                    transition-all duration-200
+                    ${selectedFloor === floor ? 'border-cyan-500 ring-2 ring-cyan-500/20' : ''}
+                  `}
                 >
-                  <button
-                    onClick={() => handleFloorClick(floor)}
-                    className={`
-                      aspect-square w-full flex flex-col items-center justify-center
-                      rounded-2xl bg-gradient-to-br ${floorColors[floor]}
-                      shadow-lg hover:shadow-xl transition-all cursor-pointer
-                      text-white relative overflow-hidden
-                      ${selectedFloor === floor ? 'ring-4 ring-white/50' : ''}
-                    `}
-                    data-testid={`floor-card-${floor}`}
-                  >
-                    {/* Background pattern */}
-                    <div className="absolute inset-0 opacity-10">
-                      <div className="absolute top-2 right-2 w-20 h-20 rounded-full bg-white"></div>
-                      <div className="absolute bottom-2 left-2 w-12 h-12 rounded-full bg-white"></div>
-                    </div>
-                    
-                    <div className="relative z-10 text-center">
-                      <div className="text-5xl font-black mb-1 drop-shadow-lg">{floor}</div>
-                      <div className="text-sm font-medium text-white/80">этаж</div>
-                    </div>
-                  </button>
-                </motion.div>
+                  {/* Glow effect on hover */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/0 to-blue-500/0 hover:from-cyan-500/10 hover:to-blue-500/10 transition-all"></div>
+                  
+                  <div className="relative h-full flex flex-col items-center justify-center">
+                    <span className="text-3xl font-bold text-white">{floor}</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">этаж</span>
+                  </div>
+                </motion.button>
               ))}
             </div>
           </div>
 
           {/* Bottom Actions */}
           <div className="pt-4 space-y-3">
-            {/* Manager login - subtle button at bottom */}
             {!user && (
-              <Button
+              <button
                 onClick={() => navigate('/login')}
-                className="w-full rounded-xl h-12 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm"
-                data-testid="manager-login-button"
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-500/30 text-slate-300 hover:text-white transition-all"
               >
-                <Shield className="w-4 h-4 mr-2 text-teal-600" />
-                Вход для старост
-              </Button>
+                <Shield className="w-4 h-4" />
+                <span className="text-sm font-medium">Вход для старост</span>
+              </button>
             )}
 
-            {/* Logout button for logged in users */}
             {user && (
-              <Button
+              <button
                 onClick={handleLogout}
-                className="w-full rounded-xl h-12 bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200"
-                data-testid="logout-button"
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl bg-white/5 hover:bg-red-500/10 border border-white/10 hover:border-red-500/30 text-slate-400 hover:text-red-400 transition-all"
               >
-                <LogOut className="w-4 h-4 mr-2" />
-                Выйти из системы
-              </Button>
+                <LogOut className="w-4 h-4" />
+                <span className="text-sm font-medium">Выйти из системы</span>
+              </button>
             )}
           </div>
 
           {/* Footer */}
-          <div className="pt-6 pb-4 text-center">
-            <p className="text-xs text-slate-400">
+          <div className="py-6 text-center">
+            <p className="text-xs text-slate-600">
               © 2024 БГМК • Санитарный контроль
             </p>
           </div>
