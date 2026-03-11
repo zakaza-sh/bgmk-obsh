@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const InspectionCalendar = ({ floor, block, onDateSelect, selectedDate }) => {
+const InspectionCalendar = ({ floor, block, onDateSelect, selectedDate, showAllFloorDates = false }) => {
   const [inspectionDates, setInspectionDates] = useState([]);
   const [inspectionDetails, setInspectionDetails] = useState({});
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -16,22 +16,32 @@ const InspectionCalendar = ({ floor, block, onDateSelect, selectedDate }) => {
   const fetchInspectionDates = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API}/api/blocks/${floor}/${block}/inspection-dates`);
+      let url;
+      if (showAllFloorDates) {
+        // Получаем даты для всего этажа
+        url = `${API}/api/floors/${floor}/inspection-dates`;
+      } else {
+        // Получаем даты для конкретного блока
+        url = `${API}/api/blocks/${floor}/${block}/inspection-dates`;
+      }
+      
+      const response = await fetch(url);
       const data = await response.json();
       setInspectionDates(data.dates || []);
       
-      // Получаем детали для всех дат
-      const historyRes = await fetch(`${API}/api/blocks/${floor}/${block}/history`);
-      const historyData = await historyRes.json();
-      
-      // Группируем по датам
-      const details = {};
-      (historyData.history || []).forEach(h => {
-        const date = h.inspection_date.split('T')[0];
-        if (!details[date]) details[date] = [];
-        details[date].push(h);
-      });
-      setInspectionDetails(details);
+      if (!showAllFloorDates) {
+        // Получаем детали только для блока
+        const historyRes = await fetch(`${API}/api/blocks/${floor}/${block}/history`);
+        const historyData = await historyRes.json();
+        
+        const details = {};
+        (historyData.history || []).forEach(h => {
+          const date = h.inspection_date.split('T')[0];
+          if (!details[date]) details[date] = [];
+          details[date].push(h);
+        });
+        setInspectionDetails(details);
+      }
     } catch (error) {
       console.error('Error fetching inspection dates:', error);
       setInspectionDates([]);

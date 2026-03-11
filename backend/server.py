@@ -528,6 +528,34 @@ async def get_inspection_dates(floor: int, block: int):
         dates = sorted(list(dates_set), reverse=True)
         return {"dates": dates}
     except Exception as e:
+
+
+@api_router.get("/floors/{floor}/inspection-dates")
+async def get_floor_inspection_dates(floor: int):
+    """Get all dates when inspections were performed for entire floor"""
+    try:
+        inspections = await db.inspections.find(
+            {"floor": floor},
+            {"_id": 0, "inspection_date": 1}
+        ).to_list(10000)
+        
+        dates_set = set()
+        for insp in inspections:
+            date_obj = insp.get('inspection_date')
+            if isinstance(date_obj, str):
+                date_str = date_obj.split('T')[0]
+            elif isinstance(date_obj, datetime):
+                date_str = date_obj.strftime('%Y-%m-%d')
+            else:
+                continue
+            dates_set.add(date_str)
+        
+        dates = sorted(list(dates_set), reverse=True)
+        return {"dates": dates}
+    except Exception as e:
+        logger.error(f"Error fetching floor inspection dates: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
         logger.error(f"Error fetching inspection dates: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
