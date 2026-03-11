@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BusFront, Zap, Clock, AlertTriangle, RefreshCw, MapPin } from 'lucide-react';
+import { ArrowLeft, BusFront, Zap, Clock, AlertTriangle, RefreshCw, MapPin, ExternalLink } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
@@ -216,7 +216,7 @@ const Transport = () => {
         </div>
 
         {/* Refresh button */}
-        <div className="p-4 pt-0">
+        <div className="p-4 pt-0 space-y-3">
           <Button
             onClick={handleRefresh}
             disabled={refreshing}
@@ -226,7 +226,19 @@ const Transport = () => {
             <RefreshCw className={`w-5 h-5 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? 'Обновление...' : 'Обновить расписание'}
           </Button>
-          <p className="text-xs text-center text-white/40 mt-4">
+          
+          {/* Real-time link */}
+          <a
+            href="https://ru.busti.me/minsk/?lat=53.859&lng=27.4916&z=17"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-white h-12 text-base font-semibold transition-all"
+          >
+            <ExternalLink className="w-5 h-5" />
+            Смотреть в реальном времени
+          </a>
+          
+          <p className="text-xs text-center text-white/40 mt-2">
             Маршруты: 38 • 57 • 103 • 123Э • 🚎 45
           </p>
         </div>
