@@ -78,7 +78,10 @@ const BlockDetails = () => {
       return;
     }
 
-    if (!token) {
+    // Get fresh token from localStorage
+    const freshToken = localStorage.getItem('token');
+    
+    if (!freshToken) {
       toast.error('Войдите в систему');
       navigate('/login');
       return;
@@ -97,7 +100,7 @@ const BlockDetails = () => {
               rating: rating,
               inspection_date: inspectionDate
             },
-            { headers: { Authorization: `Bearer ${token}` } }
+            { headers: { Authorization: `Bearer ${freshToken}` } }
           )
         )
       );
@@ -105,7 +108,8 @@ const BlockDetails = () => {
       fetchBlockData();
       fetchHistory();
     } catch (error) {
-      toast.error('Ошибка сохранения');
+      console.error('Save error:', error.response?.data || error.message);
+      toast.error(error.response?.data?.detail || 'Ошибка сохранения');
     } finally {
       setIsSubmitting(false);
     }
@@ -114,14 +118,24 @@ const BlockDetails = () => {
   const handleDeleteInspection = async (date) => {
     if (!window.confirm(`Удалить проверку за ${formatDate(date)}?`)) return;
     
+    // Get fresh token from localStorage
+    const freshToken = localStorage.getItem('token');
+    
+    if (!freshToken) {
+      toast.error('Войдите в систему');
+      navigate('/login');
+      return;
+    }
+    
     try {
       await axios.delete(`${API}/blocks/${floor}/${block}/inspection/${date}`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${freshToken}` }
       });
       toast.success('Проверка удалена');
       fetchBlockData();
       fetchHistory();
     } catch (error) {
+      console.error('Delete error:', error.response?.data || error.message);
       toast.error(error.response?.data?.detail || 'Ошибка удаления');
     }
   };
