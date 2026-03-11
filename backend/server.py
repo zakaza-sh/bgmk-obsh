@@ -223,24 +223,18 @@ async def login(credentials: UserLogin):
     if not user or not verify_password(credentials.password, user['password_hash']):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     
-    # Log login activity
-    login_record = {
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "ip": "telegram-webapp"
-    }
+    user_id = user.get('id', user.get('username'))  # Fallback to username if no id
     
+    # Log login activity
     await db.users.update_one(
-        {"id": user['id']},
-        {
-            "$set": {"last_login": datetime.now(timezone.utc).isoformat()},
-            "$push": {"login_history": {"$each": [login_record], "$slice": -50}}
-        }
+        {"username": user['username']},
+        {"$set": {"last_login": datetime.now(timezone.utc).isoformat()}}
     )
     
-    token = create_token(user['id'], user['username'], user['role'])
+    token = create_token(user_id, user['username'], user['role'])
     
     user_data = {
-        "id": user['id'],
+        "id": user_id,
         "username": user['username'],
         "role": user['role'],
         "floor_number": user.get('floor_number')
@@ -457,6 +451,35 @@ async def get_block_info(floor: int, block: int):
         residents=residents,
         last_inspection=last_inspection
     )
+
+
+@api_router.get("/blocks/{floor}/{block}/history")
+async def get_block_history(floor: int, block: int, limit: int = 50):
+    """Get inspection history for a block - accessible to everyone"""
+    inspections = await db.inspections.find(
+        {"floor": floor, "block": block},
+        {"_id": 0}
+    ).sort("inspection_date", -1).to_list(limit)
+    
+    for i in inspections:
+        if isinstance(i.get('inspection_date'), str):
+            i['inspection_date'] = datetime.fromisoformat(i['inspection_date'])
+    
+    # Group by date for better display
+    history = {}
+    for insp in inspections:
+        date_key = insp['inspection_date'].strftime('%Y-%m-%d')
+        if date_key not in history:
+            history[date_key] = {
+                'date': date_key,
+                'inspector': insp.get('inspector_name', 'Неизвестно'),
+                'small': None,
+                'large': None,
+                'common': None
+            }
+        history[date_key][insp['room_type']] = insp['rating']
+    
+    return list(history.values())
 
 
 # ==================== TRANSPORT ROUTES ====================

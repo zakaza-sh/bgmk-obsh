@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Users, Star, Calendar, CheckCircle2, AlertTriangle, X, Sparkles, Crown, Home, Sofa } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Star, Calendar, Crown, Home, Sofa, Save, History, ChevronDown } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -14,27 +14,28 @@ const BlockDetails = () => {
   const { token, user } = useAuth();
   const [blockData, setBlockData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedRoom, setSelectedRoom] = useState(null);
-  const [rating, setRating] = useState(null);
-  const [inspectionDate, setInspectionDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [history, setHistory] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
   
-  const [ratingMode, setRatingMode] = useState('single');
-  const [batchRatings, setBatchRatings] = useState({
+  // Ratings state
+  const [inspectionDate, setInspectionDate] = useState('');
+  const [ratings, setRatings] = useState({
     small: null,
     large: null,
     common: null
   });
 
   const blockNumber = parseInt(floor) * 100 + parseInt(block);
+  const canRate = user?.role === 'floor_manager' || user?.role === 'admin';
 
   useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    setInspectionDate(today);
+    setInspectionDate(new Date().toISOString().split('T')[0]);
   }, []);
 
   useEffect(() => {
     fetchBlockData();
+    fetchHistory();
   }, [floor, block]);
 
   const fetchBlockData = async () => {
@@ -42,85 +43,38 @@ const BlockDetails = () => {
       setLoading(true);
       const response = await axios.get(`${API}/blocks/${floor}/${block}`);
       setBlockData(response.data);
+      // Pre-fill with current ratings
+      setRatings({
+        small: response.data?.small_room_rating || null,
+        large: response.data?.large_room_rating || null,
+        common: response.data?.common_room_rating || null
+      });
     } catch (error) {
       console.error('Error fetching block:', error);
-      toast.error('Ошибка загрузки данных');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRoomClick = (roomType, currentRating) => {
-    if (user?.role === 'floor_manager' || user?.role === 'admin') {
-      setSelectedRoom(roomType);
-      setRating(currentRating || 0);
-      setRatingMode('single');
-    }
-  };
-
-  const openBatchRatingMode = () => {
-    if (user?.role === 'floor_manager' || user?.role === 'admin') {
-      setRatingMode('batch');
-      setSelectedRoom('batch');
-      setBatchRatings({
-        small: blockData?.small_room_rating || null,
-        large: blockData?.large_room_rating || null,
-        common: blockData?.common_room_rating || null
-      });
-    }
-  };
-
-  const handleSingleRatingSubmit = async () => {
-    if (!rating || rating < 1 || rating > 5) {
-      toast.error('Выберите оценку от 1 до 5');
-      return;
-    }
-    if (!inspectionDate) {
-      toast.error('Выберите дату проверки');
-      return;
-    }
-    if (!token) {
-      toast.error('Необходимо войти в систему');
-      navigate('/login');
-      return;
-    }
-
-    setIsSubmitting(true);
+  const fetchHistory = async () => {
     try {
-      await axios.post(
-        `${API}/inspections`,
-        {
-          floor: parseInt(floor),
-          block: parseInt(block),
-          room_type: selectedRoom,
-          rating: rating,
-          inspection_date: inspectionDate
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      toast.success('Оценка сохранена!');
-      closeModal();
-      fetchBlockData();
+      const response = await axios.get(`${API}/blocks/${floor}/${block}/history`);
+      setHistory(response.data);
     } catch (error) {
-      console.error('Error submitting rating:', error);
-      toast.error('Ошибка сохранения оценки');
-    } finally {
-      setIsSubmitting(false);
+      console.error('Error fetching history:', error);
     }
   };
 
-  const handleBatchRatingSubmit = async () => {
-    const roomsToRate = Object.entries(batchRatings).filter(([_, r]) => r !== null && r >= 1 && r <= 5);
-    if (roomsToRate.length === 0) {
+  const handleSaveAll = async () => {
+    const ratingsToSave = Object.entries(ratings).filter(([_, r]) => r !== null);
+    
+    if (ratingsToSave.length === 0) {
       toast.error('Выберите хотя бы одну оценку');
       return;
     }
-    if (!inspectionDate) {
-      toast.error('Выберите дату проверки');
-      return;
-    }
+
     if (!token) {
-      toast.error('Необходимо войти в систему');
+      toast.error('Войдите в систему');
       navigate('/login');
       return;
     }
@@ -128,77 +82,53 @@ const BlockDetails = () => {
     setIsSubmitting(true);
     try {
       await Promise.all(
-        roomsToRate.map(([roomType, roomRating]) =>
+        ratingsToSave.map(([roomType, rating]) =>
           axios.post(
             `${API}/inspections`,
             {
               floor: parseInt(floor),
               block: parseInt(block),
               room_type: roomType,
-              rating: roomRating,
+              rating: rating,
               inspection_date: inspectionDate
             },
             { headers: { Authorization: `Bearer ${token}` } }
           )
         )
       );
-      toast.success(`Сохранено ${roomsToRate.length} оценок!`);
-      closeModal();
+      toast.success('Оценки сохранены!');
       fetchBlockData();
+      fetchHistory();
     } catch (error) {
-      console.error('Error submitting ratings:', error);
-      toast.error('Ошибка сохранения оценок');
+      toast.error('Ошибка сохранения');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const closeModal = () => {
-    setSelectedRoom(null);
-    setRating(null);
-    setRatingMode('single');
-    setBatchRatings({ small: null, large: null, common: null });
-    setInspectionDate(new Date().toISOString().split('T')[0]);
-  };
-
-  // Найти старосту блока
   const blockLeader = blockData?.residents?.find(r => r.is_block_leader);
-  
-  // Разделить проживающих по комнатам (без старосты, он отображается отдельно)
-  const smallRoomResidents = blockData?.residents?.filter(r => r.room_type === 'small' && !r.is_block_leader) || [];
-  const largeRoomResidents = blockData?.residents?.filter(r => r.room_type === 'large' && !r.is_block_leader) || [];
-  
-  // Если староста в маленькой комнате, добавляем его туда тоже для подсчёта
-  const smallRoomTotal = blockData?.residents?.filter(r => r.room_type === 'small') || [];
-  const largeRoomTotal = blockData?.residents?.filter(r => r.room_type === 'large') || [];
+  const smallRoomResidents = blockData?.residents?.filter(r => r.room_type === 'small') || [];
+  const largeRoomResidents = blockData?.residents?.filter(r => r.room_type === 'large') || [];
 
-  const getRatingStyle = (rating) => {
-    if (!rating) return 'border-white/10';
-    return rating <= 2 ? 'border-red-500/50' : 'border-emerald-500/50';
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
   };
 
-  const getRatingBg = (rating) => {
-    if (!rating) return 'bg-white/5';
-    return rating <= 2 ? 'bg-red-500/10' : 'bg-emerald-500/10';
-  };
-
-  const getRatingTextColor = (rating) => {
-    if (!rating) return 'text-slate-400';
-    return rating <= 2 ? 'text-red-400' : 'text-emerald-400';
-  };
-
-  const getRatingLabel = (num) => {
-    switch(num) {
-      case 1: return 'Плохо';
-      case 2: return 'Неуд.';
-      case 3: return 'Удовл.';
-      case 4: return 'Хорошо';
-      case 5: return 'Отлично';
-      default: return '';
-    }
-  };
-
-  const canRate = user?.role === 'floor_manager' || user?.role === 'admin';
+  const RatingButton = ({ value, selected, onClick, color }) => (
+    <button
+      onClick={onClick}
+      className={`w-12 h-12 rounded-xl font-bold text-lg transition-all ${
+        selected
+          ? value <= 2 
+            ? 'bg-red-500 text-white scale-110' 
+            : 'bg-emerald-500 text-white scale-110'
+          : `bg-white/5 text-white border border-white/10 hover:border-${color}-500/50`
+      }`}
+    >
+      {value}
+    </button>
+  );
 
   if (loading) {
     return (
@@ -211,577 +141,239 @@ const BlockDetails = () => {
   return (
     <div className="min-h-screen bg-[#0a0f1c]">
       <div className="fixed inset-0 bg-gradient-to-br from-[#0a0f1c] via-[#111827] to-[#0a0f1c]"></div>
-      <div className="fixed inset-0 bg-[url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 viewBox=%220 0 60 60%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%22%23ffffff%22 fill-opacity=%220.02%22%3E%3Cpath d=%22M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-50"></div>
       
-      <div className="relative max-w-lg mx-auto min-h-screen">
+      <div className="relative max-w-lg mx-auto min-h-screen pb-32">
         {/* Header */}
-        <div className="p-6 pb-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate(`/floor/${floor}`)}
-              className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-              data-testid="back-button"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-            <div className="flex-1">
-              <h1 className="text-xl font-semibold text-white">
-                Блок {blockNumber}
-              </h1>
-              <p className="text-sm text-slate-500">{floor} этаж</p>
-            </div>
-            
-            {canRate && (
-              <button
-                onClick={openBatchRatingMode}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-medium hover:from-cyan-400 hover:to-blue-400 transition-all"
-                data-testid="batch-rate-button"
-              >
-                <Sparkles className="w-4 h-4" />
-                Оценить всё
-              </button>
-            )}
+        <div className="p-4 flex items-center gap-3 sticky top-0 bg-[#0a0f1c]/90 backdrop-blur-sm z-10">
+          <button
+            onClick={() => navigate(`/floor/${floor}`)}
+            className="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+          <div>
+            <h1 className="text-xl font-bold text-white">Блок {blockNumber}</h1>
+            <p className="text-sm text-slate-500">{floor} этаж</p>
           </div>
-
-          {/* User info */}
-          {user && (
-            <div className="mt-4 flex items-center gap-2 p-3 rounded-xl bg-white/5 border border-white/10">
-              <div className={`w-2 h-2 rounded-full ${user.role === 'admin' ? 'bg-amber-500' : 'bg-cyan-500'}`}></div>
-              <span className="text-sm text-slate-300">
-                {user.role === 'admin' ? 'Администратор' : `Староста ${user.floor_number} этажа`}
-              </span>
-            </div>
-          )}
         </div>
 
-        {/* Block Leader Card - Priority */}
+        {/* Block Leader */}
         {blockLeader && (
-          <div className="px-6 pb-4">
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-amber-500/50">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
-                  <Crown className="w-6 h-6 text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-xs text-amber-400 font-semibold uppercase tracking-wider mb-1">
-                    Староста блока
-                  </div>
-                  <div className="text-lg font-semibold text-white">
-                    {blockLeader.full_name}
-                  </div>
-                </div>
+          <div className="mx-4 mb-4 p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/40">
+            <div className="flex items-center gap-3">
+              <Crown className="w-6 h-6 text-amber-400" />
+              <div>
+                <div className="text-xs text-amber-400 font-medium">СТАРОСТА БЛОКА</div>
+                <div className="text-white font-semibold">{blockLeader.full_name}</div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Content - Rooms */}
-        <div className="px-6 pb-6 space-y-4">
+        {/* Date Picker - Only for managers */}
+        {canRate && (
+          <div className="mx-4 mb-4 p-4 rounded-xl bg-white/5 border border-white/10">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-cyan-400" />
+              <div className="flex-1">
+                <div className="text-xs text-slate-500 mb-1">Дата проверки</div>
+                <Input
+                  type="date"
+                  value={inspectionDate}
+                  onChange={(e) => setInspectionDate(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="h-8 bg-transparent border-0 p-0 text-white font-medium focus-visible:ring-0 [color-scheme:dark]"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Rooms with Ratings */}
+        <div className="px-4 space-y-4">
           
-          {/* Small Room Section */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 px-1">
-              <Home className="w-4 h-4 text-blue-400" />
-              <span className="text-sm font-semibold text-blue-400 uppercase tracking-wider">
-                Маленькая комната
-              </span>
-              <span className="text-xs text-slate-500">({smallRoomTotal.length} чел.)</span>
+          {/* Small Room */}
+          <div className="p-4 rounded-xl bg-[#151b2e] border border-blue-500/30">
+            <div className="flex items-center gap-2 mb-3">
+              <Home className="w-5 h-5 text-blue-400" />
+              <span className="font-semibold text-white">Маленькая комната</span>
+              <span className="text-xs text-slate-500 ml-auto">{smallRoomResidents.length} чел.</span>
             </div>
-            <button
-              onClick={() => handleRoomClick('small', blockData?.small_room_rating)}
-              className={`w-full p-4 rounded-xl border-2 transition-all text-left ${getRatingStyle(blockData?.small_room_rating)} ${getRatingBg(blockData?.small_room_rating)} ${
-                canRate ? 'hover:border-blue-500/50 cursor-pointer' : ''
-              }`}
-              data-testid="room-card-small"
-            >
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                  {blockData?.small_room_rating ? (
-                    <div className={`flex items-center gap-1 ${getRatingTextColor(blockData?.small_room_rating)}`}>
-                      <Star className="w-5 h-5 fill-current" />
-                      <span className="text-2xl font-bold">{blockData?.small_room_rating}</span>
-                      <span className="text-sm ml-1 opacity-70">{getRatingLabel(blockData?.small_room_rating)}</span>
-                    </div>
-                  ) : (
-                    <span className="text-slate-500">Нет оценки</span>
-                  )}
-                </div>
-                {canRate && !blockData?.small_room_rating && (
-                  <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full">
-                    Оценить
-                  </span>
-                )}
+            
+            {/* Residents */}
+            {smallRoomResidents.length > 0 && (
+              <div className="mb-4 space-y-1">
+                {smallRoomResidents.map(r => (
+                  <div key={r.id} className="text-sm text-slate-400 flex items-center gap-2">
+                    {r.is_block_leader && <Crown className="w-3 h-3 text-amber-400" />}
+                    <span className={r.is_block_leader ? 'text-amber-400' : ''}>{r.full_name}</span>
+                  </div>
+                ))}
               </div>
+            )}
+            
+            {/* Rating Buttons */}
+            {canRate ? (
+              <div className="flex gap-2 justify-center">
+                {[1, 2, 3, 4, 5].map(num => (
+                  <RatingButton
+                    key={num}
+                    value={num}
+                    selected={ratings.small === num}
+                    onClick={() => setRatings(prev => ({ ...prev, small: num }))}
+                    color="blue"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <Star className={`w-6 h-6 ${ratings.small ? (ratings.small <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'} fill-current`} />
+                <span className={`text-2xl font-bold ${ratings.small ? (ratings.small <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'}`}>
+                  {ratings.small || '—'}
+                </span>
+              </div>
+            )}
+          </div>
 
-              {smallRoomTotal.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-white/10">
-                  {smallRoomTotal.map((resident) => (
-                    <div key={resident.id} className="flex items-center gap-2 text-sm">
-                      {resident.is_block_leader ? (
-                        <Crown className="w-4 h-4 text-amber-400" />
-                      ) : (
-                        <Users className="w-4 h-4 text-slate-500" />
-                      )}
-                      <span className={resident.is_block_leader ? 'text-amber-400 font-medium' : 'text-slate-300'}>
-                        {resident.full_name}
-                      </span>
-                      {resident.is_block_leader && (
-                        <span className="ml-auto text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
-                          Староста
-                        </span>
-                      )}
-                    </div>
-                  ))}
+          {/* Large Room */}
+          <div className="p-4 rounded-xl bg-[#151b2e] border border-purple-500/30">
+            <div className="flex items-center gap-2 mb-3">
+              <Home className="w-5 h-5 text-purple-400" />
+              <span className="font-semibold text-white">Большая комната</span>
+              <span className="text-xs text-slate-500 ml-auto">{largeRoomResidents.length} чел.</span>
+            </div>
+            
+            {/* Residents */}
+            {largeRoomResidents.length > 0 && (
+              <div className="mb-4 space-y-1">
+                {largeRoomResidents.map(r => (
+                  <div key={r.id} className="text-sm text-slate-400 flex items-center gap-2">
+                    {r.is_block_leader && <Crown className="w-3 h-3 text-amber-400" />}
+                    <span className={r.is_block_leader ? 'text-amber-400' : ''}>{r.full_name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            
+            {/* Rating Buttons */}
+            {canRate ? (
+              <div className="flex gap-2 justify-center">
+                {[1, 2, 3, 4, 5].map(num => (
+                  <RatingButton
+                    key={num}
+                    value={num}
+                    selected={ratings.large === num}
+                    onClick={() => setRatings(prev => ({ ...prev, large: num }))}
+                    color="purple"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <Star className={`w-6 h-6 ${ratings.large ? (ratings.large <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'} fill-current`} />
+                <span className={`text-2xl font-bold ${ratings.large ? (ratings.large <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'}`}>
+                  {ratings.large || '—'}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Common Room */}
+          <div className="p-4 rounded-xl bg-[#151b2e] border border-emerald-500/30">
+            <div className="flex items-center gap-2 mb-3">
+              <Sofa className="w-5 h-5 text-emerald-400" />
+              <span className="font-semibold text-white">Общее пространство</span>
+            </div>
+            <p className="text-xs text-slate-500 mb-4">Коридор, санузел, кухня</p>
+            
+            {/* Rating Buttons */}
+            {canRate ? (
+              <div className="flex gap-2 justify-center">
+                {[1, 2, 3, 4, 5].map(num => (
+                  <RatingButton
+                    key={num}
+                    value={num}
+                    selected={ratings.common === num}
+                    onClick={() => setRatings(prev => ({ ...prev, common: num }))}
+                    color="emerald"
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-2">
+                <Star className={`w-6 h-6 ${ratings.common ? (ratings.common <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'} fill-current`} />
+                <span className={`text-2xl font-bold ${ratings.common ? (ratings.common <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'}`}>
+                  {ratings.common || '—'}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* History */}
+          {history.length > 0 && (
+            <div className="mt-6">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 text-slate-400"
+              >
+                <div className="flex items-center gap-2">
+                  <History className="w-4 h-4" />
+                  <span className="text-sm">История проверок ({history.length})</span>
+                </div>
+                {showHistory ? <ChevronDown className="w-4 h-4" /> : <ChevronDown className="w-4 h-4 -rotate-90" />}
+              </button>
+              
+              {showHistory && (
+                <div className="mt-2 rounded-xl bg-[#151b2e] border border-white/10 overflow-hidden">
+                  <div className="grid grid-cols-4 gap-2 p-3 text-xs text-slate-500 border-b border-white/10">
+                    <div>Дата</div>
+                    <div className="text-center">Мал.</div>
+                    <div className="text-center">Бол.</div>
+                    <div className="text-center">Общ.</div>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {history.map((h, i) => (
+                      <div key={i} className="grid grid-cols-4 gap-2 p-3 text-sm border-b border-white/5 last:border-0">
+                        <div className="text-slate-400">{formatDate(h.date)}</div>
+                        <div className={`text-center font-medium ${h.small ? (h.small <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'}`}>
+                          {h.small || '—'}
+                        </div>
+                        <div className={`text-center font-medium ${h.large ? (h.large <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'}`}>
+                          {h.large || '—'}
+                        </div>
+                        <div className={`text-center font-medium ${h.common ? (h.common <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'}`}>
+                          {h.common || '—'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-            </button>
-          </div>
-
-          {/* Large Room Section */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 px-1">
-              <Home className="w-4 h-4 text-purple-400" />
-              <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">
-                Большая комната
-              </span>
-              <span className="text-xs text-slate-500">({largeRoomTotal.length} чел.)</span>
             </div>
-            <button
-              onClick={() => handleRoomClick('large', blockData?.large_room_rating)}
-              className={`w-full p-4 rounded-xl border-2 transition-all text-left ${getRatingStyle(blockData?.large_room_rating)} ${getRatingBg(blockData?.large_room_rating)} ${
-                canRate ? 'hover:border-purple-500/50 cursor-pointer' : ''
-              }`}
-              data-testid="room-card-large"
-            >
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-2">
-                  {blockData?.large_room_rating ? (
-                    <div className={`flex items-center gap-1 ${getRatingTextColor(blockData?.large_room_rating)}`}>
-                      <Star className="w-5 h-5 fill-current" />
-                      <span className="text-2xl font-bold">{blockData?.large_room_rating}</span>
-                      <span className="text-sm ml-1 opacity-70">{getRatingLabel(blockData?.large_room_rating)}</span>
-                    </div>
-                  ) : (
-                    <span className="text-slate-500">Нет оценки</span>
-                  )}
-                </div>
-                {canRate && !blockData?.large_room_rating && (
-                  <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full">
-                    Оценить
-                  </span>
-                )}
-              </div>
-
-              {largeRoomTotal.length > 0 && (
-                <div className="space-y-2 pt-2 border-t border-white/10">
-                  {largeRoomTotal.map((resident) => (
-                    <div key={resident.id} className="flex items-center gap-2 text-sm">
-                      {resident.is_block_leader ? (
-                        <Crown className="w-4 h-4 text-amber-400" />
-                      ) : (
-                        <Users className="w-4 h-4 text-slate-500" />
-                      )}
-                      <span className={resident.is_block_leader ? 'text-amber-400 font-medium' : 'text-slate-300'}>
-                        {resident.full_name}
-                      </span>
-                      {resident.is_block_leader && (
-                        <span className="ml-auto text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
-                          Староста
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </button>
-          </div>
-
-          {/* Common Room Section */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 px-1">
-              <Sofa className="w-4 h-4 text-emerald-400" />
-              <span className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">
-                Общее пространство
-              </span>
-            </div>
-            <button
-              onClick={() => handleRoomClick('common', blockData?.common_room_rating)}
-              className={`w-full p-4 rounded-xl border-2 transition-all text-left ${getRatingStyle(blockData?.common_room_rating)} ${getRatingBg(blockData?.common_room_rating)} ${
-                canRate ? 'hover:border-emerald-500/50 cursor-pointer' : ''
-              }`}
-              data-testid="room-card-common"
-            >
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  {blockData?.common_room_rating ? (
-                    <div className={`flex items-center gap-1 ${getRatingTextColor(blockData?.common_room_rating)}`}>
-                      <Star className="w-5 h-5 fill-current" />
-                      <span className="text-2xl font-bold">{blockData?.common_room_rating}</span>
-                      <span className="text-sm ml-1 opacity-70">{getRatingLabel(blockData?.common_room_rating)}</span>
-                    </div>
-                  ) : (
-                    <span className="text-slate-500">Нет оценки</span>
-                  )}
-                </div>
-                {canRate && !blockData?.common_room_rating && (
-                  <span className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-full">
-                    Оценить
-                  </span>
-                )}
-              </div>
-              <p className="text-xs text-slate-500 mt-2">
-                Коридор, санузел, кухня
-              </p>
-            </button>
-          </div>
+          )}
         </div>
 
-        {/* Rating Modal - Single Room */}
-        <AnimatePresence>
-          {selectedRoom && ratingMode === 'single' && canRate && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
-              <motion.div
-                initial={{ opacity: 0, y: 100 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 100 }}
-                className="bg-[#151b2e] w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-white/10 overflow-hidden"
+        {/* Save Button - Fixed at bottom */}
+        {canRate && (
+          <div className="fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[#0a0f1c] via-[#0a0f1c] to-transparent">
+            <div className="max-w-lg mx-auto">
+              <button
+                onClick={handleSaveAll}
+                disabled={isSubmitting || !Object.values(ratings).some(r => r !== null)}
+                className="w-full h-14 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 disabled:from-slate-600 disabled:to-slate-700 text-white font-semibold text-lg flex items-center justify-center gap-2 transition-all"
               >
-                <div className="flex justify-center pt-3 sm:hidden">
-                  <div className="w-10 h-1 bg-white/20 rounded-full" />
-                </div>
-
-                <div className="p-6 pb-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 text-cyan-400 text-sm font-medium mb-1">
-                        <Star className="w-4 h-4" />
-                        Оценка комнаты
-                      </div>
-                      <h3 className="text-xl font-semibold text-white">
-                        {selectedRoom === 'small' ? 'Маленькая комната' :
-                         selectedRoom === 'large' ? 'Большая комната' : 
-                         'Общее пространство'}
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-1">
-                        Блок {blockNumber} • {floor} этаж
-                      </p>
-                    </div>
-                    <button
-                      onClick={closeModal}
-                      className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-                      data-testid="close-modal-button"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="px-6 pb-6 space-y-5">
-                  <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
-                    <Calendar className="w-5 h-5 text-slate-500" />
-                    <div className="flex-1">
-                      <label className="text-xs text-slate-500 block mb-1">Дата проверки</label>
-                      <Input
-                        type="date"
-                        value={inspectionDate}
-                        onChange={(e) => setInspectionDate(e.target.value)}
-                        max={new Date().toISOString().split('T')[0]}
-                        className="h-9 bg-transparent border-0 p-0 text-base font-medium text-white focus-visible:ring-0 [color-scheme:dark]"
-                        data-testid="inspection-date-input"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-sm text-slate-400 mb-3 block">Выберите оценку</label>
-                    <div className="flex gap-2" data-testid="rating-selector">
-                      {[1, 2, 3, 4, 5].map((num) => {
-                        const isSelected = rating === num;
-                        const isProblem = num <= 2;
-                        return (
-                          <motion.button
-                            key={num}
-                            onClick={() => setRating(num)}
-                            whileTap={{ scale: 0.95 }}
-                            className={`flex-1 py-4 rounded-xl flex flex-col items-center justify-center border transition-all ${
-                              isSelected
-                                ? isProblem 
-                                  ? 'bg-red-500 border-red-500 text-white'
-                                  : 'bg-emerald-500 border-emerald-500 text-white'
-                                : 'bg-white/5 border-white/10 text-white hover:border-cyan-500/50'
-                            }`}
-                            data-testid={`rating-${num}`}
-                          >
-                            <span className="text-2xl font-bold">{num}</span>
-                            <span className={`text-[10px] mt-1 ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>
-                              {getRatingLabel(num)}
-                            </span>
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <AnimatePresence mode="wait">
-                    {rating && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className={`flex items-center gap-3 p-3 rounded-xl ${
-                          rating <= 2 
-                            ? 'bg-red-500/10 border border-red-500/30 text-red-400'
-                            : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400'
-                        }`}
-                      >
-                        {rating <= 2 ? (
-                          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                        ) : (
-                          <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                        )}
-                        <span className="text-sm font-medium">
-                          {rating <= 2 ? 'Проблемная комната' : 'Хорошее состояние'}
-                        </span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="p-6 pt-0 flex gap-3">
-                  <button
-                    onClick={closeModal}
-                    disabled={isSubmitting}
-                    className="flex-1 h-12 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-medium transition-all disabled:opacity-50"
-                    data-testid="rating-cancel-button"
-                  >
-                    Отмена
-                  </button>
-                  <button
-                    onClick={handleSingleRatingSubmit}
-                    disabled={!rating || isSubmitting}
-                    className={`flex-1 h-12 rounded-xl font-medium transition-all disabled:opacity-50 ${
-                      rating 
-                        ? rating <= 2 
-                          ? 'bg-red-500 hover:bg-red-600 text-white' 
-                          : 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                        : 'bg-white/10 text-slate-400'
-                    }`}
-                    data-testid="rating-submit-button"
-                  >
-                    {isSubmitting ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mx-auto" />
-                    ) : rating ? 'Сохранить' : 'Выберите оценку'}
-                  </button>
-                </div>
-              </motion.div>
+                {isSubmitting ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" />
+                ) : (
+                  <>
+                    <Save className="w-5 h-5" />
+                    Сохранить оценки
+                  </>
+                )}
+              </button>
             </div>
-          )}
-        </AnimatePresence>
-
-        {/* Rating Modal - Batch Mode */}
-        <AnimatePresence>
-          {selectedRoom === 'batch' && ratingMode === 'batch' && canRate && (
-            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center z-50">
-              <motion.div
-                initial={{ opacity: 0, y: 100 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 100 }}
-                className="bg-[#151b2e] w-full max-w-lg rounded-t-3xl sm:rounded-3xl border border-white/10 overflow-hidden max-h-[90vh] overflow-y-auto"
-              >
-                <div className="flex justify-center pt-3 sm:hidden">
-                  <div className="w-10 h-1 bg-white/20 rounded-full" />
-                </div>
-
-                <div className="p-6 pb-4 sticky top-0 bg-[#151b2e] z-10 border-b border-white/5">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 text-cyan-400 text-sm font-medium mb-1">
-                        <Sparkles className="w-4 h-4" />
-                        Быстрая оценка
-                      </div>
-                      <h3 className="text-xl font-semibold text-white">
-                        Оценить весь блок
-                      </h3>
-                      <p className="text-sm text-slate-500 mt-1">
-                        Блок {blockNumber} • {floor} этаж
-                      </p>
-                    </div>
-                    <button
-                      onClick={closeModal}
-                      className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-colors"
-                      data-testid="close-batch-modal-button"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="px-6 pb-6 space-y-5">
-                  <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/10">
-                    <Calendar className="w-5 h-5 text-slate-500" />
-                    <div className="flex-1">
-                      <label className="text-xs text-slate-500 block mb-1">Дата проверки</label>
-                      <Input
-                        type="date"
-                        value={inspectionDate}
-                        onChange={(e) => setInspectionDate(e.target.value)}
-                        max={new Date().toISOString().split('T')[0]}
-                        className="h-9 bg-transparent border-0 p-0 text-base font-medium text-white focus-visible:ring-0 [color-scheme:dark]"
-                        data-testid="batch-inspection-date-input"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Small Room */}
-                  <div className="space-y-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Home className="w-4 h-4 text-blue-400" />
-                        <span className="font-medium text-white">Маленькая комната</span>
-                      </div>
-                      {batchRatings.small && (
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          batchRatings.small <= 2 
-                            ? 'bg-red-500/20 text-red-400'
-                            : 'bg-emerald-500/20 text-emerald-400'
-                        }`}>
-                          {getRatingLabel(batchRatings.small)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2" data-testid="batch-rating-small">
-                      {[1, 2, 3, 4, 5].map((num) => {
-                        const isSelected = batchRatings.small === num;
-                        const isProblem = num <= 2;
-                        return (
-                          <motion.button
-                            key={num}
-                            onClick={() => setBatchRatings(prev => ({ ...prev, small: num }))}
-                            whileTap={{ scale: 0.95 }}
-                            className={`flex-1 py-3 rounded-xl flex items-center justify-center border transition-all text-lg font-bold ${
-                              isSelected
-                                ? isProblem 
-                                  ? 'bg-red-500 border-red-500 text-white'
-                                  : 'bg-emerald-500 border-emerald-500 text-white'
-                                : 'bg-white/5 border-white/10 text-white hover:border-blue-500/50'
-                            }`}
-                          >
-                            {num}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Large Room */}
-                  <div className="space-y-3 p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Home className="w-4 h-4 text-purple-400" />
-                        <span className="font-medium text-white">Большая комната</span>
-                      </div>
-                      {batchRatings.large && (
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          batchRatings.large <= 2 
-                            ? 'bg-red-500/20 text-red-400'
-                            : 'bg-emerald-500/20 text-emerald-400'
-                        }`}>
-                          {getRatingLabel(batchRatings.large)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2" data-testid="batch-rating-large">
-                      {[1, 2, 3, 4, 5].map((num) => {
-                        const isSelected = batchRatings.large === num;
-                        const isProblem = num <= 2;
-                        return (
-                          <motion.button
-                            key={num}
-                            onClick={() => setBatchRatings(prev => ({ ...prev, large: num }))}
-                            whileTap={{ scale: 0.95 }}
-                            className={`flex-1 py-3 rounded-xl flex items-center justify-center border transition-all text-lg font-bold ${
-                              isSelected
-                                ? isProblem 
-                                  ? 'bg-red-500 border-red-500 text-white'
-                                  : 'bg-emerald-500 border-emerald-500 text-white'
-                                : 'bg-white/5 border-white/10 text-white hover:border-purple-500/50'
-                            }`}
-                          >
-                            {num}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Common Room */}
-                  <div className="space-y-3 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Sofa className="w-4 h-4 text-emerald-400" />
-                        <span className="font-medium text-white">Общее пространство</span>
-                      </div>
-                      {batchRatings.common && (
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          batchRatings.common <= 2 
-                            ? 'bg-red-500/20 text-red-400'
-                            : 'bg-emerald-500/20 text-emerald-400'
-                        }`}>
-                          {getRatingLabel(batchRatings.common)}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2" data-testid="batch-rating-common">
-                      {[1, 2, 3, 4, 5].map((num) => {
-                        const isSelected = batchRatings.common === num;
-                        const isProblem = num <= 2;
-                        return (
-                          <motion.button
-                            key={num}
-                            onClick={() => setBatchRatings(prev => ({ ...prev, common: num }))}
-                            whileTap={{ scale: 0.95 }}
-                            className={`flex-1 py-3 rounded-xl flex items-center justify-center border transition-all text-lg font-bold ${
-                              isSelected
-                                ? isProblem 
-                                  ? 'bg-red-500 border-red-500 text-white'
-                                  : 'bg-emerald-500 border-emerald-500 text-white'
-                                : 'bg-white/5 border-white/10 text-white hover:border-emerald-500/50'
-                            }`}
-                          >
-                            {num}
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-6 pt-0 flex gap-3 sticky bottom-0 bg-[#151b2e] border-t border-white/5">
-                  <button
-                    onClick={closeModal}
-                    disabled={isSubmitting}
-                    className="flex-1 h-12 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-300 font-medium transition-all disabled:opacity-50"
-                    data-testid="batch-cancel-button"
-                  >
-                    Отмена
-                  </button>
-                  <button
-                    onClick={handleBatchRatingSubmit}
-                    disabled={!Object.values(batchRatings).some(r => r !== null) || isSubmitting}
-                    className="flex-1 h-12 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-medium transition-all disabled:opacity-50"
-                    data-testid="batch-submit-button"
-                  >
-                    {isSubmitting ? (
-                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mx-auto" />
-                    ) : (
-                      `Сохранить (${Object.values(batchRatings).filter(r => r !== null).length})`
-                    )}
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+          </div>
+        )}
       </div>
     </div>
   );
