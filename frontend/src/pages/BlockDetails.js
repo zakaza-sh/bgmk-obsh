@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Users, Star, Calendar, CheckCircle2, AlertTriangle, X, Sparkles } from 'lucide-react';
+import { ArrowLeft, Users, Star, Calendar, CheckCircle2, AlertTriangle, X, Sparkles, Crown, Home, Sofa } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -161,35 +161,25 @@ const BlockDetails = () => {
     setInspectionDate(new Date().toISOString().split('T')[0]);
   };
 
-  const rooms = [
-    { 
-      type: 'small', 
-      name: 'Маленькая комната', 
-      shortName: 'Малая',
-      rating: blockData?.small_room_rating,
-      residents: blockData?.residents?.filter(r => r.room_type === 'small') || []
-    },
-    { 
-      type: 'large', 
-      name: 'Большая комната', 
-      shortName: 'Большая',
-      rating: blockData?.large_room_rating,
-      residents: blockData?.residents?.filter(r => r.room_type === 'large') || []
-    },
-    { 
-      type: 'common', 
-      name: 'Общее пространство', 
-      shortName: 'Общая',
-      rating: blockData?.common_room_rating,
-      residents: blockData?.residents?.filter(r => r.room_type === 'common') || []
-    }
-  ];
+  // Найти старосту блока
+  const blockLeader = blockData?.residents?.find(r => r.is_block_leader);
+  
+  // Разделить проживающих по комнатам (без старосты, он отображается отдельно)
+  const smallRoomResidents = blockData?.residents?.filter(r => r.room_type === 'small' && !r.is_block_leader) || [];
+  const largeRoomResidents = blockData?.residents?.filter(r => r.room_type === 'large' && !r.is_block_leader) || [];
+  
+  // Если староста в маленькой комнате, добавляем его туда тоже для подсчёта
+  const smallRoomTotal = blockData?.residents?.filter(r => r.room_type === 'small') || [];
+  const largeRoomTotal = blockData?.residents?.filter(r => r.room_type === 'large') || [];
 
   const getRatingStyle = (rating) => {
-    if (!rating) return 'bg-white/5 border-white/10';
-    return rating <= 2 
-      ? 'bg-red-500/10 border-red-500/30' 
-      : 'bg-emerald-500/10 border-emerald-500/30';
+    if (!rating) return 'border-white/10';
+    return rating <= 2 ? 'border-red-500/50' : 'border-emerald-500/50';
+  };
+
+  const getRatingBg = (rating) => {
+    if (!rating) return 'bg-white/5';
+    return rating <= 2 ? 'bg-red-500/10' : 'bg-emerald-500/10';
   };
 
   const getRatingTextColor = (rating) => {
@@ -264,44 +254,77 @@ const BlockDetails = () => {
           )}
         </div>
 
-        {/* Content */}
-        <div className="px-6 pb-6 space-y-3">
-          {rooms.map((room) => (
+        {/* Block Leader Card - Priority */}
+        {blockLeader && (
+          <div className="px-6 pb-4">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-amber-500/50">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center">
+                  <Crown className="w-6 h-6 text-white" />
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs text-amber-400 font-semibold uppercase tracking-wider mb-1">
+                    Староста блока
+                  </div>
+                  <div className="text-lg font-semibold text-white">
+                    {blockLeader.full_name}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Content - Rooms */}
+        <div className="px-6 pb-6 space-y-4">
+          
+          {/* Small Room Section */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <Home className="w-4 h-4 text-blue-400" />
+              <span className="text-sm font-semibold text-blue-400 uppercase tracking-wider">
+                Маленькая комната
+              </span>
+              <span className="text-xs text-slate-500">({smallRoomTotal.length} чел.)</span>
+            </div>
             <button
-              key={room.type}
-              onClick={() => handleRoomClick(room.type, room.rating)}
-              className={`w-full p-5 rounded-xl border transition-all text-left ${getRatingStyle(room.rating)} ${
-                canRate ? 'hover:border-cyan-500/50 cursor-pointer' : ''
+              onClick={() => handleRoomClick('small', blockData?.small_room_rating)}
+              className={`w-full p-4 rounded-xl border-2 transition-all text-left ${getRatingStyle(blockData?.small_room_rating)} ${getRatingBg(blockData?.small_room_rating)} ${
+                canRate ? 'hover:border-blue-500/50 cursor-pointer' : ''
               }`}
-              data-testid={`room-card-${room.type}`}
+              data-testid="room-card-small"
             >
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="font-medium text-white">{room.name}</h3>
-                  {room.type !== 'common' && (
-                    <p className="text-sm text-slate-500 mt-1">
-                      {room.residents.length} проживающих
-                    </p>
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  {blockData?.small_room_rating ? (
+                    <div className={`flex items-center gap-1 ${getRatingTextColor(blockData?.small_room_rating)}`}>
+                      <Star className="w-5 h-5 fill-current" />
+                      <span className="text-2xl font-bold">{blockData?.small_room_rating}</span>
+                      <span className="text-sm ml-1 opacity-70">{getRatingLabel(blockData?.small_room_rating)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-slate-500">Нет оценки</span>
                   )}
                 </div>
-                {room.rating ? (
-                  <div className={`flex items-center gap-1 ${getRatingTextColor(room.rating)}`}>
-                    <Star className="w-5 h-5 fill-current" />
-                    <span className="text-xl font-bold">{room.rating}</span>
-                  </div>
-                ) : canRate && (
-                  <span className="text-xs px-2 py-1 bg-cyan-500/20 text-cyan-400 rounded-full">
+                {canRate && !blockData?.small_room_rating && (
+                  <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded-full">
                     Оценить
                   </span>
                 )}
               </div>
 
-              {room.type !== 'common' && room.residents.length > 0 && (
-                <div className="space-y-2 pt-3 border-t border-white/5">
-                  {room.residents.map((resident) => (
+              {smallRoomTotal.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  {smallRoomTotal.map((resident) => (
                     <div key={resident.id} className="flex items-center gap-2 text-sm">
-                      <Users className="w-4 h-4 text-slate-500" />
-                      <span className="text-slate-300">{resident.full_name}</span>
+                      {resident.is_block_leader ? (
+                        <Crown className="w-4 h-4 text-amber-400" />
+                      ) : (
+                        <Users className="w-4 h-4 text-slate-500" />
+                      )}
+                      <span className={resident.is_block_leader ? 'text-amber-400 font-medium' : 'text-slate-300'}>
+                        {resident.full_name}
+                      </span>
                       {resident.is_block_leader && (
                         <span className="ml-auto text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
                           Староста
@@ -312,7 +335,105 @@ const BlockDetails = () => {
                 </div>
               )}
             </button>
-          ))}
+          </div>
+
+          {/* Large Room Section */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <Home className="w-4 h-4 text-purple-400" />
+              <span className="text-sm font-semibold text-purple-400 uppercase tracking-wider">
+                Большая комната
+              </span>
+              <span className="text-xs text-slate-500">({largeRoomTotal.length} чел.)</span>
+            </div>
+            <button
+              onClick={() => handleRoomClick('large', blockData?.large_room_rating)}
+              className={`w-full p-4 rounded-xl border-2 transition-all text-left ${getRatingStyle(blockData?.large_room_rating)} ${getRatingBg(blockData?.large_room_rating)} ${
+                canRate ? 'hover:border-purple-500/50 cursor-pointer' : ''
+              }`}
+              data-testid="room-card-large"
+            >
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  {blockData?.large_room_rating ? (
+                    <div className={`flex items-center gap-1 ${getRatingTextColor(blockData?.large_room_rating)}`}>
+                      <Star className="w-5 h-5 fill-current" />
+                      <span className="text-2xl font-bold">{blockData?.large_room_rating}</span>
+                      <span className="text-sm ml-1 opacity-70">{getRatingLabel(blockData?.large_room_rating)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-slate-500">Нет оценки</span>
+                  )}
+                </div>
+                {canRate && !blockData?.large_room_rating && (
+                  <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded-full">
+                    Оценить
+                  </span>
+                )}
+              </div>
+
+              {largeRoomTotal.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-white/10">
+                  {largeRoomTotal.map((resident) => (
+                    <div key={resident.id} className="flex items-center gap-2 text-sm">
+                      {resident.is_block_leader ? (
+                        <Crown className="w-4 h-4 text-amber-400" />
+                      ) : (
+                        <Users className="w-4 h-4 text-slate-500" />
+                      )}
+                      <span className={resident.is_block_leader ? 'text-amber-400 font-medium' : 'text-slate-300'}>
+                        {resident.full_name}
+                      </span>
+                      {resident.is_block_leader && (
+                        <span className="ml-auto text-xs bg-amber-500/20 text-amber-400 px-2 py-0.5 rounded-full">
+                          Староста
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </button>
+          </div>
+
+          {/* Common Room Section */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 px-1">
+              <Sofa className="w-4 h-4 text-emerald-400" />
+              <span className="text-sm font-semibold text-emerald-400 uppercase tracking-wider">
+                Общее пространство
+              </span>
+            </div>
+            <button
+              onClick={() => handleRoomClick('common', blockData?.common_room_rating)}
+              className={`w-full p-4 rounded-xl border-2 transition-all text-left ${getRatingStyle(blockData?.common_room_rating)} ${getRatingBg(blockData?.common_room_rating)} ${
+                canRate ? 'hover:border-emerald-500/50 cursor-pointer' : ''
+              }`}
+              data-testid="room-card-common"
+            >
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  {blockData?.common_room_rating ? (
+                    <div className={`flex items-center gap-1 ${getRatingTextColor(blockData?.common_room_rating)}`}>
+                      <Star className="w-5 h-5 fill-current" />
+                      <span className="text-2xl font-bold">{blockData?.common_room_rating}</span>
+                      <span className="text-sm ml-1 opacity-70">{getRatingLabel(blockData?.common_room_rating)}</span>
+                    </div>
+                  ) : (
+                    <span className="text-slate-500">Нет оценки</span>
+                  )}
+                </div>
+                {canRate && !blockData?.common_room_rating && (
+                  <span className="text-xs px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded-full">
+                    Оценить
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-500 mt-2">
+                Коридор, санузел, кухня
+              </p>
+            </button>
+          </div>
         </div>
 
         {/* Rating Modal - Single Room */}
@@ -511,65 +632,128 @@ const BlockDetails = () => {
                     </div>
                   </div>
 
-                  {rooms.map((room) => (
-                    <div key={room.type} className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-white">{room.name}</span>
-                        {batchRatings[room.type] && (
-                          <span className={`text-xs px-2 py-1 rounded-full ${
-                            batchRatings[room.type] <= 2 
-                              ? 'bg-red-500/20 text-red-400'
-                              : 'bg-emerald-500/20 text-emerald-400'
-                          }`}>
-                            {getRatingLabel(batchRatings[room.type])}
-                          </span>
-                        )}
+                  {/* Small Room */}
+                  <div className="space-y-3 p-4 rounded-xl bg-blue-500/5 border border-blue-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Home className="w-4 h-4 text-blue-400" />
+                        <span className="font-medium text-white">Маленькая комната</span>
                       </div>
-                      <div className="flex gap-2" data-testid={`batch-rating-${room.type}`}>
-                        {[1, 2, 3, 4, 5].map((num) => {
-                          const isSelected = batchRatings[room.type] === num;
-                          const isProblem = num <= 2;
-                          return (
-                            <motion.button
-                              key={num}
-                              onClick={() => setBatchRatings(prev => ({ ...prev, [room.type]: num }))}
-                              whileTap={{ scale: 0.95 }}
-                              className={`flex-1 py-3 rounded-xl flex items-center justify-center border transition-all text-lg font-bold ${
-                                isSelected
-                                  ? isProblem 
-                                    ? 'bg-red-500 border-red-500 text-white'
-                                    : 'bg-emerald-500 border-emerald-500 text-white'
-                                  : 'bg-white/5 border-white/10 text-white hover:border-cyan-500/50'
-                              }`}
-                              data-testid={`batch-rating-${room.type}-${num}`}
-                            >
-                              {num}
-                            </motion.button>
-                          );
-                        })}
-                      </div>
+                      {batchRatings.small && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          batchRatings.small <= 2 
+                            ? 'bg-red-500/20 text-red-400'
+                            : 'bg-emerald-500/20 text-emerald-400'
+                        }`}>
+                          {getRatingLabel(batchRatings.small)}
+                        </span>
+                      )}
                     </div>
-                  ))}
+                    <div className="flex gap-2" data-testid="batch-rating-small">
+                      {[1, 2, 3, 4, 5].map((num) => {
+                        const isSelected = batchRatings.small === num;
+                        const isProblem = num <= 2;
+                        return (
+                          <motion.button
+                            key={num}
+                            onClick={() => setBatchRatings(prev => ({ ...prev, small: num }))}
+                            whileTap={{ scale: 0.95 }}
+                            className={`flex-1 py-3 rounded-xl flex items-center justify-center border transition-all text-lg font-bold ${
+                              isSelected
+                                ? isProblem 
+                                  ? 'bg-red-500 border-red-500 text-white'
+                                  : 'bg-emerald-500 border-emerald-500 text-white'
+                                : 'bg-white/5 border-white/10 text-white hover:border-blue-500/50'
+                            }`}
+                          >
+                            {num}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
 
-                  {Object.values(batchRatings).some(r => r !== null) && (
-                    <div className="p-4 bg-white/5 rounded-xl border border-white/10">
-                      <div className="text-sm text-slate-500 mb-2">Итого:</div>
-                      <div className="flex gap-4">
-                        {rooms.map(room => (
-                          <div key={room.type} className="text-center flex-1">
-                            <div className="text-xs text-slate-500">{room.shortName}</div>
-                            <div className={`text-lg font-bold ${
-                              batchRatings[room.type] 
-                                ? batchRatings[room.type] <= 2 ? 'text-red-400' : 'text-emerald-400'
-                                : 'text-slate-600'
-                            }`}>
-                              {batchRatings[room.type] || '—'}
-                            </div>
-                          </div>
-                        ))}
+                  {/* Large Room */}
+                  <div className="space-y-3 p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Home className="w-4 h-4 text-purple-400" />
+                        <span className="font-medium text-white">Большая комната</span>
                       </div>
+                      {batchRatings.large && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          batchRatings.large <= 2 
+                            ? 'bg-red-500/20 text-red-400'
+                            : 'bg-emerald-500/20 text-emerald-400'
+                        }`}>
+                          {getRatingLabel(batchRatings.large)}
+                        </span>
+                      )}
                     </div>
-                  )}
+                    <div className="flex gap-2" data-testid="batch-rating-large">
+                      {[1, 2, 3, 4, 5].map((num) => {
+                        const isSelected = batchRatings.large === num;
+                        const isProblem = num <= 2;
+                        return (
+                          <motion.button
+                            key={num}
+                            onClick={() => setBatchRatings(prev => ({ ...prev, large: num }))}
+                            whileTap={{ scale: 0.95 }}
+                            className={`flex-1 py-3 rounded-xl flex items-center justify-center border transition-all text-lg font-bold ${
+                              isSelected
+                                ? isProblem 
+                                  ? 'bg-red-500 border-red-500 text-white'
+                                  : 'bg-emerald-500 border-emerald-500 text-white'
+                                : 'bg-white/5 border-white/10 text-white hover:border-purple-500/50'
+                            }`}
+                          >
+                            {num}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Common Room */}
+                  <div className="space-y-3 p-4 rounded-xl bg-emerald-500/5 border border-emerald-500/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sofa className="w-4 h-4 text-emerald-400" />
+                        <span className="font-medium text-white">Общее пространство</span>
+                      </div>
+                      {batchRatings.common && (
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          batchRatings.common <= 2 
+                            ? 'bg-red-500/20 text-red-400'
+                            : 'bg-emerald-500/20 text-emerald-400'
+                        }`}>
+                          {getRatingLabel(batchRatings.common)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2" data-testid="batch-rating-common">
+                      {[1, 2, 3, 4, 5].map((num) => {
+                        const isSelected = batchRatings.common === num;
+                        const isProblem = num <= 2;
+                        return (
+                          <motion.button
+                            key={num}
+                            onClick={() => setBatchRatings(prev => ({ ...prev, common: num }))}
+                            whileTap={{ scale: 0.95 }}
+                            className={`flex-1 py-3 rounded-xl flex items-center justify-center border transition-all text-lg font-bold ${
+                              isSelected
+                                ? isProblem 
+                                  ? 'bg-red-500 border-red-500 text-white'
+                                  : 'bg-emerald-500 border-emerald-500 text-white'
+                                : 'bg-white/5 border-white/10 text-white hover:border-emerald-500/50'
+                            }`}
+                          >
+                            {num}
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="p-6 pt-0 flex gap-3 sticky bottom-0 bg-[#151b2e] border-t border-white/5">
