@@ -205,7 +205,7 @@ const BlockDetails = () => {
           </div>
         )}
 
-        {/* Inspection Calendar - Show for everyone */}
+        {/* Inspection Calendar - Visible for ALL users */}
         <div className="mx-4 mb-4">
           <InspectionCalendar
             floor={parseInt(floor)}
@@ -213,12 +213,11 @@ const BlockDetails = () => {
             selectedDate={inspectionDate}
             onDateSelect={(date) => {
               setInspectionDate(date);
-              // Можно добавить автозагрузку оценок за эту дату
             }}
           />
         </div>
 
-        {/* Date Picker - Only for managers */}
+        {/* Date Picker - Only for managers/admins */}
         {canRate && (
           <div className="mx-4 mb-4 p-4 rounded-xl bg-white/5 border border-white/10">
             <div className="flex items-center gap-3">
