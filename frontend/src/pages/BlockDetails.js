@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Star, Calendar, Crown, Home, Sofa, Save, History, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Star, Calendar, Crown, Home, Sofa, Save, History, ChevronDown, Trash2 } from 'lucide-react';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -103,6 +103,21 @@ const BlockDetails = () => {
       toast.error('Ошибка сохранения');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteInspection = async (date) => {
+    if (!window.confirm(`Удалить проверку за ${formatDate(date)}?`)) return;
+    
+    try {
+      await axios.delete(`${API}/blocks/${floor}/${block}/inspection/${date}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Проверка удалена');
+      fetchBlockData();
+      fetchHistory();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Ошибка удаления');
     }
   };
 
@@ -325,15 +340,16 @@ const BlockDetails = () => {
               
               {showHistory && (
                 <div className="mt-2 rounded-xl bg-[#151b2e] border border-white/10 overflow-hidden">
-                  <div className="grid grid-cols-4 gap-2 p-3 text-xs text-slate-500 border-b border-white/10">
+                  <div className={`grid ${canRate ? 'grid-cols-5' : 'grid-cols-4'} gap-2 p-3 text-xs text-slate-500 border-b border-white/10`}>
                     <div>Дата</div>
                     <div className="text-center">Мал.</div>
                     <div className="text-center">Бол.</div>
                     <div className="text-center">Общ.</div>
+                    {canRate && <div></div>}
                   </div>
                   <div className="max-h-48 overflow-y-auto">
                     {history.map((h, i) => (
-                      <div key={i} className="grid grid-cols-4 gap-2 p-3 text-sm border-b border-white/5 last:border-0">
+                      <div key={i} className={`grid ${canRate ? 'grid-cols-5' : 'grid-cols-4'} gap-2 p-3 text-sm border-b border-white/5 last:border-0 items-center`}>
                         <div className="text-slate-400">{formatDate(h.date)}</div>
                         <div className={`text-center font-medium ${h.small ? (h.small <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'}`}>
                           {h.small || '—'}
@@ -344,6 +360,15 @@ const BlockDetails = () => {
                         <div className={`text-center font-medium ${h.common ? (h.common <= 2 ? 'text-red-400' : 'text-emerald-400') : 'text-slate-600'}`}>
                           {h.common || '—'}
                         </div>
+                        {canRate && (
+                          <button
+                            onClick={() => handleDeleteInspection(h.date)}
+                            className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 flex items-center justify-center text-red-400 ml-auto"
+                            title="Удалить проверку"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>

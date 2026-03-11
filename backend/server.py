@@ -482,6 +482,29 @@ async def get_block_history(floor: int, block: int, limit: int = 50):
     return list(history.values())
 
 
+@api_router.delete("/blocks/{floor}/{block}/inspection/{date}")
+async def delete_inspection(floor: int, block: int, date: str, current_user: dict = Depends(get_current_user)):
+    """Delete all inspections for a block on a specific date. Only for floor managers and admins."""
+    if current_user['role'] not in ['admin', 'floor_manager']:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    
+    # Floor managers can only delete inspections for their floor
+    if current_user['role'] == 'floor_manager' and current_user.get('floor_number') != floor:
+        raise HTTPException(status_code=403, detail="Вы можете удалять только проверки своего этажа")
+    
+    # Delete all inspections for this block on this date
+    result = await db.inspections.delete_many({
+        "floor": floor,
+        "block": block,
+        "inspection_date": {"$regex": f"^{date}"}
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Проверки не найдены")
+    
+    return {"message": f"Удалено {result.deleted_count} записей", "deleted": result.deleted_count}
+
+
 # ==================== TRANSPORT ROUTES ====================
 
 # Yandex Rasp API
