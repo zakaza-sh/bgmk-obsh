@@ -507,25 +507,25 @@ async def delete_inspection(floor: int, block: int, date: str, current_user: dic
 async def get_inspection_dates(floor: int, block: int):
     """Get all dates when inspections were performed for a block"""
     try:
-        # Получаем все уникальные даты проверок
-        pipeline = [
-            {"$match": {"floor": floor, "block": block}},
-            {
-                "$group": {
-                    "_id": {
-                        "$dateToString": {
-                            "format": "%Y-%m-%d",
-                            "date": "$inspection_date"
-                        }
-                    }
-                }
-            },
-            {"$sort": {"_id": -1}}
-        ]
+        # Получаем все проверки
+        inspections = await db.inspections.find(
+            {"floor": floor, "block": block},
+            {"_id": 0, "inspection_date": 1}
+        ).to_list(1000)
         
-        results = await db.inspections.aggregate(pipeline).to_list(1000)
-        dates = [r['_id'] for r in results]
+        # Извлекаем уникальные даты
+        dates_set = set()
+        for insp in inspections:
+            date_obj = insp.get('inspection_date')
+            if isinstance(date_obj, str):
+                date_str = date_obj.split('T')[0]
+            elif isinstance(date_obj, datetime):
+                date_str = date_obj.strftime('%Y-%m-%d')
+            else:
+                continue
+            dates_set.add(date_str)
         
+        dates = sorted(list(dates_set), reverse=True)
         return {"dates": dates}
     except Exception as e:
         logger.error(f"Error fetching inspection dates: {e}")
