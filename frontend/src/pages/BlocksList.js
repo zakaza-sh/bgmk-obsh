@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API } from '../context/AuthContext';
 import { toast } from 'sonner';
+import InspectionCalendar from '../components/InspectionCalendar';
 
 const BlocksList = () => {
   const { floor } = useParams();
