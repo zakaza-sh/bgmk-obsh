@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, BusFront, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, BusFront, Zap, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { useAuth } from '../context/AuthContext';
@@ -48,8 +48,21 @@ const Transport = () => {
     return messages[Math.floor(Math.random() * messages.length)];
   };
 
-  const getVehicleIcon = () => {
+  const getVehicleIcon = (type) => {
+    if (type === 'trolleybus') {
+      return <Zap className="w-8 h-8" />;
+    }
     return <BusFront className="w-8 h-8" />;
+  };
+
+  const getVehicleLabel = (type) => {
+    return type === 'trolleybus' ? 'Троллейбус' : 'Автобус';
+  };
+
+  const getVehicleColor = (type) => {
+    return type === 'trolleybus' 
+      ? 'bg-green-100 text-green-600' 
+      : 'bg-blue-100 text-blue-600';
   };
 
   if (loading) {
@@ -123,8 +136,8 @@ const Transport = () => {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
-                        {getVehicleIcon()}
+                      <div className={`p-3 rounded-xl ${getVehicleColor(schedule.vehicle_type)}`}>
+                        {getVehicleIcon(schedule.vehicle_type)}
                       </div>
                       <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -132,7 +145,7 @@ const Transport = () => {
                             {schedule.route_number}
                           </h3>
                           <span className="text-sm text-muted-foreground">
-                            Автобус
+                            {getVehicleLabel(schedule.vehicle_type)}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -178,7 +191,7 @@ const Transport = () => {
             Обновить
           </Button>
           <p className="text-xs text-center text-muted-foreground mt-3">
-            Маршруты: 103, 57, 38
+            Маршруты: 38, 57, 103, 123Э, троллейбус 45
           </p>
         </div>
       </div>

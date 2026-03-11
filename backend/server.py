@@ -468,31 +468,33 @@ transport_cache = {
     "ttl": 60
 }
 
-# Real bus routes at "Дом правосудия" stop (OSM verified, Semashko st., Minsk)
+# Real routes at "Дом правосудия" stop (Semashko st., Minsk)
 # Stop coords: 53.8590, 27.4916 (ref:minsktrans 16250/16251)
-BUS_ROUTES = [
-    {"number": "103", "from": "ДС Малиновка-4", "to": "ДС Юго-Запад", "peak_interval": 10, "offpeak_interval": 15, "night_interval": 30},
-    {"number": "57", "from": "Семашко", "to": "ДС Восточная", "peak_interval": 12, "offpeak_interval": 20, "night_interval": 35},
-    {"number": "38", "from": "Ак. Карского", "to": "АС Юго-Западная", "peak_interval": 14, "offpeak_interval": 18, "night_interval": 30},
+TRANSPORT_ROUTES = [
+    {"number": "38", "type": "bus", "to": "АС Юго-Западная", "peak_interval": 14, "offpeak_interval": 18, "night_interval": 30},
+    {"number": "57", "type": "bus", "to": "ДС Восточная", "peak_interval": 12, "offpeak_interval": 20, "night_interval": 35},
+    {"number": "103", "type": "bus", "to": "ДС Юго-Запад", "peak_interval": 10, "offpeak_interval": 15, "night_interval": 30},
+    {"number": "123Э", "type": "bus", "to": "Люцинская", "peak_interval": 15, "offpeak_interval": 25, "night_interval": 40},
+    {"number": "45", "type": "trolleybus", "to": "Автостоянка", "peak_interval": 8, "offpeak_interval": 12, "night_interval": 25},
 ]
 
 @api_router.get("/transport", response_model=List[TransportSchedule])
 async def get_transport_schedule():
-    """Bus schedule for 'Дом правосудия' stop (Semashko st., Minsk). Only buses."""
+    """Transport schedule for 'Дом правосудия' stop (Semashko st., Minsk). Buses and trolleybuses."""
     now = datetime.now(timezone(timedelta(hours=3)))  # Minsk UTC+3
     
     if (transport_cache["data"] and transport_cache["timestamp"] and 
         (now - transport_cache["timestamp"]).total_seconds() < transport_cache["ttl"]):
         return transport_cache["data"]
     
-    schedules = generate_bus_schedule(now)
+    schedules = generate_transport_schedule(now)
     transport_cache["data"] = schedules
     transport_cache["timestamp"] = now
     return schedules
 
 
-def generate_bus_schedule(now):
-    """Generate realistic bus schedule based on actual routes at Дом правосудия"""
+def generate_transport_schedule(now):
+    """Generate realistic transport schedule based on actual routes at Дом правосудия"""
     import hashlib
     hour = now.hour
     minute = now.minute
@@ -507,7 +509,7 @@ def generate_bus_schedule(now):
     
     schedules = []
     
-    for route in BUS_ROUTES:
+    for route in TRANSPORT_ROUTES:
         interval = route[f"{period}_interval"]
         
         # Deterministic but time-varying: use hash of route+hour+minute_bucket
@@ -515,7 +517,7 @@ def generate_bus_schedule(now):
         seed_str = f"{route['number']}-{hour}-{minute_bucket}-{now.date()}"
         seed = int(hashlib.md5(seed_str.encode()).hexdigest()[:8], 16)
         
-        # Time until next bus: based on position within interval cycle
+        # Time until next transport: based on position within interval cycle
         elapsed_in_cycle = minute % interval
         minutes_until = interval - elapsed_in_cycle
         
@@ -526,18 +528,18 @@ def generate_bus_schedule(now):
         arrival_time = now + timedelta(minutes=minutes_until)
         
         schedules.append(TransportSchedule(
-            vehicle_type="bus",
+            vehicle_type=route["type"],
             route_number=route["number"],
             arrival_time=arrival_time.strftime("%H:%M"),
             minutes_until=minutes_until,
             urgent=minutes_until <= 5
         ))
         
-        # Also show the NEXT bus after this one
+        # Also show the NEXT transport after this one
         next_minutes = minutes_until + interval + ((seed % 3) - 1)
         next_arrival = now + timedelta(minutes=next_minutes)
         schedules.append(TransportSchedule(
-            vehicle_type="bus",
+            vehicle_type=route["type"],
             route_number=route["number"],
             arrival_time=next_arrival.strftime("%H:%M"),
             minutes_until=next_minutes,
@@ -933,11 +935,12 @@ async def _handle_bot_command(text: str, chat_id: int):
         
         elif text.startswith('/bus'):
             now = datetime.now(timezone(timedelta(hours=3)))
-            schedules = generate_bus_schedule(now)
-            lines = ["<b>Автобусы — Дом правосудия</b>\n"]
-            for s in schedules[:6]:
-                prefix = "!!" if s.urgent else "-"
-                lines.append(f"{prefix} <b>{s.route_number}</b>  {s.arrival_time} ({s.minutes_until} мин)")
+            schedules = generate_transport_schedule(now)
+            lines = ["<b>Транспорт — Дом правосудия</b>\n"]
+            for s in schedules[:8]:
+                prefix = "🚌" if s.vehicle_type == "bus" else "🚎"
+                urgent_mark = "⚡" if s.urgent else ""
+                lines.append(f"{prefix} <b>{s.route_number}</b>  {s.arrival_time} ({s.minutes_until} мин) {urgent_mark}")
             await send_telegram_message(chat_id, "\n".join(lines))
         
     except Exception as e:
