@@ -26,15 +26,12 @@ const Login = () => {
     if (result.success) {
       toast.success('Успешный вход!');
       
-      // Redirect based on user role
-      // Get user info from result or fetch it
       const response = await axios.get(`${API}/auth/me`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       
       const userData = response.data;
       
-      // Redirect floor managers directly to their floor
       if (userData.role === 'floor_manager' && userData.floor_number) {
         navigate(`/floor/${userData.floor_number}`);
       } else if (userData.role === 'admin') {
@@ -50,40 +47,42 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-6">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50 p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         className="w-full max-w-md"
       >
-        <Card className="p-8 shadow-xl rounded-2xl border border-border bg-card">
+        <Card className="p-8 shadow-2xl rounded-3xl border-0 bg-white/80 backdrop-blur-xl">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <Lock className="w-8 h-8 text-primary" />
-            </div>
-            <h1 className="text-3xl font-display font-semibold tracking-tight mb-2">
-              Санитарный контроль
+            <img 
+              src="/logo-bgmk.jpg" 
+              alt="БГМК" 
+              className="w-24 h-24 rounded-2xl object-cover mx-auto mb-4 shadow-lg"
+            />
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight mb-1">
+              Общежитие БГМК
             </h1>
-            <p className="text-muted-foreground text-sm">
-              Войдите для продолжения
+            <p className="text-slate-500 text-sm">
+              Санитарный контроль
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-sm font-medium mb-2 block" htmlFor="username">
+              <label className="text-sm font-medium text-slate-700 mb-2 block" htmlFor="username">
                 Логин
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
                   id="username"
                   type="text"
                   placeholder="Введите логин"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-12 bg-slate-50 border-slate-200 focus:bg-white"
                   required
                   data-testid="login-username-input"
                 />
@@ -91,18 +90,18 @@ const Login = () => {
             </div>
 
             <div>
-              <label className="text-sm font-medium mb-2 block" htmlFor="password">
+              <label className="text-sm font-medium text-slate-700 mb-2 block" htmlFor="password">
                 Пароль
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
                   id="password"
                   type="password"
                   placeholder="Введите пароль"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 h-12 bg-slate-50 border-slate-200 focus:bg-white"
                   required
                   data-testid="login-password-input"
                 />
@@ -111,12 +110,15 @@ const Login = () => {
 
             <Button
               type="submit"
-              className="w-full mt-6 h-12 text-base font-medium rounded-xl"
+              className="w-full mt-6 h-12 text-base font-semibold rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white shadow-lg shadow-teal-500/30 border-0"
               disabled={loading}
               data-testid="login-submit-button"
             >
               {loading ? (
-                <span>Вход...</span>
+                <span className="flex items-center">
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                  Вход...
+                </span>
               ) : (
                 <>
                   <LogIn className="w-4 h-4 mr-2" />
@@ -126,9 +128,13 @@ const Login = () => {
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-sm text-muted-foreground">
-            <p>Для входа используйте свои учётные данные</p>
-            <p className="mt-2 text-xs">Админ: admin / admin123</p>
+          <div className="mt-6 text-center">
+            <button
+              onClick={() => navigate('/')}
+              className="text-sm text-slate-500 hover:text-teal-600 transition-colors"
+            >
+              ← Вернуться на главную
+            </button>
           </div>
         </Card>
       </motion.div>

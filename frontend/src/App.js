@@ -10,7 +10,6 @@ import Login from "./pages/Login";
 import FloorsList from "./pages/FloorsList";
 import BlocksList from "./pages/BlocksList";
 import BlockDetails from "./pages/BlockDetails";
-import Transport from "./pages/Transport";
 import Admin from "./pages/Admin";
 
 // Protected Route Component - only for admin pages
@@ -41,7 +40,6 @@ function AppRoutes() {
       <Route path="/" element={<FloorsList />} />
       <Route path="/floor/:floor" element={<BlocksList />} />
       <Route path="/floor/:floor/block/:block" element={<BlockDetails />} />
-      <Route path="/transport" element={<Transport />} />
       <Route
         path="/admin"
         element={

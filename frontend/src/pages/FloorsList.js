@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Building2, LogOut, Shield, Search, X, Users, MapPin } from 'lucide-react';
+import { LogOut, Shield, Search, X, Users, MapPin, ChevronRight } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { useAuth } from '../context/AuthContext';
@@ -39,11 +39,9 @@ const FloorsList = () => {
   const performSearch = async () => {
     setIsSearching(true);
     try {
-      // Search by resident name
       const response = await axios.get(`${API}/residents?search=${encodeURIComponent(searchQuery)}`);
       const residents = response.data;
       
-      // Also check if query matches block number
       const blockMatches = [];
       const queryNum = parseInt(searchQuery);
       if (!isNaN(queryNum) && queryNum >= 201 && queryNum <= 915) {
@@ -82,44 +80,55 @@ const FloorsList = () => {
   };
 
   const handleSearchResultClick = (result) => {
-    if (result.type === 'block') {
-      navigate(`/floor/${result.floor}/block/${result.block}`);
-    } else {
-      navigate(`/floor/${result.floor}/block/${result.block}`);
-    }
+    navigate(`/floor/${result.floor}/block/${result.block}`);
     setShowSearch(false);
     setSearchQuery('');
   };
 
+  // Floor colors for visual variety
+  const floorColors = {
+    2: 'from-blue-500 to-blue-600',
+    3: 'from-emerald-500 to-emerald-600',
+    4: 'from-violet-500 to-violet-600',
+    5: 'from-orange-500 to-orange-600',
+    6: 'from-pink-500 to-pink-600',
+    7: 'from-cyan-500 to-cyan-600',
+    8: 'from-amber-500 to-amber-600',
+    9: 'from-indigo-500 to-indigo-600',
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-md mx-auto min-h-screen shadow-2xl md:max-w-lg md:border-x md:border-border relative">
-        {/* Header */}
-        <div className="bg-card border-b border-border p-6 sticky top-0 z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
-              <Building2 className="w-6 h-6 text-primary" />
-            </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-teal-50">
+      <div className="max-w-md mx-auto min-h-screen md:max-w-lg relative">
+        {/* Header with Logo */}
+        <div className="bg-white/80 backdrop-blur-xl border-b border-slate-200 p-6 sticky top-0 z-10">
+          <div className="flex items-center gap-4">
+            <img 
+              src="/logo-bgmk.jpg" 
+              alt="БГМК" 
+              className="w-16 h-16 rounded-2xl object-cover shadow-lg"
+            />
             <div className="flex-1">
-              <h1 className="text-2xl font-display font-semibold tracking-tight">
-                Санитарный контроль
+              <h1 className="text-xl font-bold text-slate-800 tracking-tight">
+                Общежитие БГМК
               </h1>
-              <p className="text-sm text-muted-foreground">
-                {user ? (
-                  `${user.username} (${user.role === 'admin' ? 'Админ' : `Этаж ${user.floor_number}`})`
-                ) : (
-                  'Выберите этаж для просмотра'
-                )}
+              <p className="text-sm text-slate-500">
+                Санитарный контроль
               </p>
+              {user && (
+                <p className="text-xs text-teal-600 font-medium mt-0.5">
+                  {user.role === 'admin' ? '👑 Администратор' : `📋 Этаж ${user.floor_number}`}
+                </p>
+              )}
             </div>
             <Button
-              variant="outline"
+              variant="ghost"
               size="icon"
               onClick={() => setShowSearch(!showSearch)}
-              className="rounded-xl"
+              className="rounded-xl hover:bg-slate-100"
               data-testid="search-toggle-button"
             >
-              <Search className="w-5 h-5" />
+              <Search className="w-5 h-5 text-slate-600" />
             </Button>
           </div>
 
@@ -134,20 +143,20 @@ const FloorsList = () => {
                 className="overflow-hidden"
               >
                 <div className="mt-4 relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <Input
                     type="text"
                     placeholder="Поиск по номеру блока или ФИО..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-10"
+                    className="pl-10 pr-10 bg-white border-slate-200"
                     autoFocus
                     data-testid="global-search-input"
                   />
                   {searchQuery && (
                     <button
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -156,42 +165,42 @@ const FloorsList = () => {
 
                 {/* Search Results */}
                 {searchQuery.length >= 2 && (
-                  <div className="mt-3 bg-white border border-border rounded-xl overflow-hidden max-h-64 overflow-y-auto">
+                  <div className="mt-3 bg-white border border-slate-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto shadow-lg">
                     {isSearching ? (
-                      <div className="p-4 text-center text-muted-foreground">
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary mx-auto"></div>
+                      <div className="p-4 text-center text-slate-500">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-teal-500 mx-auto"></div>
                       </div>
                     ) : searchResults.length === 0 ? (
-                      <div className="p-4 text-center text-muted-foreground text-sm">
+                      <div className="p-4 text-center text-slate-500 text-sm">
                         Ничего не найдено
                       </div>
                     ) : (
-                      <div className="divide-y divide-border">
+                      <div className="divide-y divide-slate-100">
                         {searchResults.slice(0, 10).map((result, idx) => (
                           <button
                             key={idx}
                             onClick={() => handleSearchResultClick(result)}
-                            className="w-full p-3 text-left hover:bg-muted/50 transition-colors flex items-center gap-3"
+                            className="w-full p-3 text-left hover:bg-slate-50 transition-colors flex items-center gap-3"
                             data-testid={`search-result-${idx}`}
                           >
                             {result.type === 'block' ? (
                               <>
-                                <div className="w-8 h-8 bg-primary/10 rounded-lg flex items-center justify-center">
-                                  <MapPin className="w-4 h-4 text-primary" />
+                                <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
+                                  <MapPin className="w-4 h-4 text-teal-600" />
                                 </div>
                                 <div>
-                                  <div className="font-medium">Блок {result.blockNumber}</div>
-                                  <div className="text-xs text-muted-foreground">{result.floor} этаж</div>
+                                  <div className="font-medium text-slate-800">Блок {result.blockNumber}</div>
+                                  <div className="text-xs text-slate-500">{result.floor} этаж</div>
                                 </div>
                               </>
                             ) : (
                               <>
-                                <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center">
-                                  <Users className="w-4 h-4 text-muted-foreground" />
+                                <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center">
+                                  <Users className="w-4 h-4 text-slate-500" />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="font-medium truncate">{result.full_name}</div>
-                                  <div className="text-xs text-muted-foreground">
+                                  <div className="font-medium text-slate-800 truncate">{result.full_name}</div>
+                                  <div className="text-xs text-slate-500">
                                     Блок {result.blockNumber} • {result.room_type === 'small' ? 'Малая' : result.room_type === 'large' ? 'Большая' : 'Общая'}
                                   </div>
                                 </div>
@@ -209,51 +218,60 @@ const FloorsList = () => {
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-5 space-y-5">
           {/* Admin panel button - only for admin */}
           {user?.role === 'admin' && (
-            <Button
-              onClick={() => navigate('/admin')}
-              className="w-full h-14 text-base rounded-2xl"
-              variant="outline"
-              data-testid="admin-panel-button"
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
             >
-              <Shield className="w-4 h-4 mr-2" />
-              Админ-панель
-            </Button>
+              <Button
+                onClick={() => navigate('/admin')}
+                className="w-full h-14 text-base rounded-2xl bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white shadow-lg shadow-violet-500/30 border-0"
+                data-testid="admin-panel-button"
+              >
+                <Shield className="w-5 h-5 mr-2" />
+                Админ-панель
+                <ChevronRight className="w-5 h-5 ml-auto" />
+              </Button>
+            </motion.div>
           )}
 
-          {/* Floors */}
+          {/* Floors Section */}
           <div className="space-y-4">
-            <h2 className="text-lg font-medium text-muted-foreground">Этажи общежития</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {floors.map((floor) => (
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider px-1">
+              Выберите этаж
+            </h2>
+            <div className="grid grid-cols-2 gap-3">
+              {floors.map((floor, index) => (
                 <motion.div
                   key={floor}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ duration: 0.2 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
                 >
                   <button
                     onClick={() => handleFloorClick(floor)}
                     className={`
-                      aspect-square w-full flex items-center justify-center
-                      rounded-2xl bg-white border shadow-sm
-                      hover:shadow-md transition-all cursor-pointer
-                      text-2xl font-bold hover:bg-slate-50
-                      ${
-                        selectedFloor === floor
-                          ? 'ring-2 ring-primary border-transparent'
-                          : 'border-border'
-                      }
+                      aspect-square w-full flex flex-col items-center justify-center
+                      rounded-2xl bg-gradient-to-br ${floorColors[floor]}
+                      shadow-lg hover:shadow-xl transition-all cursor-pointer
+                      text-white relative overflow-hidden
+                      ${selectedFloor === floor ? 'ring-4 ring-white/50' : ''}
                     `}
                     data-testid={`floor-card-${floor}`}
                   >
-                    <div className="text-center">
-                      <div className="text-4xl font-display font-bold mb-1">{floor}</div>
-                      <div className="text-xs text-muted-foreground font-normal">этаж</div>
+                    {/* Background pattern */}
+                    <div className="absolute inset-0 opacity-10">
+                      <div className="absolute top-2 right-2 w-20 h-20 rounded-full bg-white"></div>
+                      <div className="absolute bottom-2 left-2 w-12 h-12 rounded-full bg-white"></div>
+                    </div>
+                    
+                    <div className="relative z-10 text-center">
+                      <div className="text-5xl font-black mb-1 drop-shadow-lg">{floor}</div>
+                      <div className="text-sm font-medium text-white/80">этаж</div>
                     </div>
                   </button>
                 </motion.div>
@@ -261,43 +279,39 @@ const FloorsList = () => {
             </div>
           </div>
 
-          {/* Transport button */}
-          <Button
-            onClick={() => navigate('/transport')}
-            className="w-full h-14 text-base rounded-2xl"
-            variant="secondary"
-            data-testid="transport-button"
-          >
-            Расписание транспорта
-          </Button>
+          {/* Bottom Actions */}
+          <div className="pt-4 space-y-3">
+            {/* Manager login - subtle button at bottom */}
+            {!user && (
+              <Button
+                onClick={() => navigate('/login')}
+                className="w-full rounded-xl h-12 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-sm"
+                data-testid="manager-login-button"
+              >
+                <Shield className="w-4 h-4 mr-2 text-teal-600" />
+                Вход для старост
+              </Button>
+            )}
 
-          {/* Manager login - subtle button at bottom */}
-          {!user && (
-            <Button
-              onClick={() => navigate('/login')}
-              className="w-full rounded-xl"
-              variant="ghost"
-              size="sm"
-              data-testid="manager-login-button"
-            >
-              <Shield className="w-4 h-4 mr-2" />
-              Вход для старост
-            </Button>
-          )}
+            {/* Logout button for logged in users */}
+            {user && (
+              <Button
+                onClick={handleLogout}
+                className="w-full rounded-xl h-12 bg-white hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-200"
+                data-testid="logout-button"
+              >
+                <LogOut className="w-4 h-4 mr-2" />
+                Выйти из системы
+              </Button>
+            )}
+          </div>
 
-          {/* Logout button for logged in users */}
-          {user && (
-            <Button
-              onClick={handleLogout}
-              className="w-full rounded-xl"
-              variant="ghost"
-              size="sm"
-              data-testid="logout-button"
-            >
-              <LogOut className="w-4 h-4 mr-2" />
-              Выйти
-            </Button>
-          )}
+          {/* Footer */}
+          <div className="pt-6 pb-4 text-center">
+            <p className="text-xs text-slate-400">
+              © 2024 БГМК • Санитарный контроль
+            </p>
+          </div>
         </div>
       </div>
     </div>

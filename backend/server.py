@@ -952,16 +952,16 @@ async def telegram_webhook(request: Request):
 
 
 async def _handle_bot_command(text: str, chat_id: int):
-    """Process bot command in background"""
+    """Process bot command in background - optimized for high load"""
     try:
         if text.startswith('/start'):
             webapp_url = os.environ.get('WEBAPP_URL', '')
             await send_telegram_message(
                 chat_id,
-                "<b>Санитарный контроль общежития</b>\n\nДобро пожаловать! Нажмите кнопку ниже, чтобы открыть приложение.",
+                "<b>🏠 Общежитие БГМК</b>\n<i>Санитарный контроль</i>\n\n✅ Нажмите кнопку ниже, чтобы открыть приложение.",
                 reply_markup={
                     "inline_keyboard": [[
-                        {"text": "Открыть приложение", "web_app": {"url": webapp_url}}
+                        {"text": "📋 Открыть приложение", "web_app": {"url": webapp_url}}
                     ]]
                 }
             )
@@ -969,25 +969,40 @@ async def _handle_bot_command(text: str, chat_id: int):
         elif text.startswith('/help'):
             await send_telegram_message(
                 chat_id,
-                "<b>Команды бота:</b>\n\n/start - Начать работу\n/help - Показать справку\n/status - Статус проверок\n/bus - Расписание автобусов"
+                "<b>📖 Справка по командам:</b>\n\n"
+                "/start - Открыть приложение\n"
+                "/help - Показать справку\n"
+                "/status - Статистика проверок\n"
+                "/floor - Информация по этажам"
             )
         
         elif text.startswith('/status'):
             total_inspections = await db.inspections.count_documents({})
+            total_residents = await db.residents.count_documents({})
             problem_rooms = await db.inspections.count_documents({"rating": {"$lte": 2}})
             await send_telegram_message(
                 chat_id,
-                f"<b>Статистика проверок:</b>\n\n- Всего проверок: {total_inspections}\n- Проблемных комнат: {problem_rooms}"
+                f"<b>📊 Статистика:</b>\n\n"
+                f"👥 Учащихся: {total_residents}\n"
+                f"✅ Проверок: {total_inspections}\n"
+                f"⚠️ Проблемных: {problem_rooms}"
             )
         
-        elif text.startswith('/bus'):
-            now = datetime.now(timezone(timedelta(hours=3)))
-            schedules = generate_fallback_schedule(now)
-            lines = ["<b>🚌 Транспорт — Дом правосудия</b>\n"]
-            for s in schedules[:5]:
-                icon = "🚎" if s.vehicle_type == "trolleybus" else "🚌"
-                urgent_mark = " ⚡" if s.urgent else ""
-                lines.append(f"{icon} <b>{s.route_number}</b>  {s.arrival_time} ({s.minutes_until} мин){urgent_mark}")
+        elif text.startswith('/floor'):
+            # Get stats per floor
+            pipeline = [
+                {"$group": {"_id": "$floor", "count": {"$sum": 1}}},
+                {"$sort": {"_id": 1}}
+            ]
+            floor_stats = await db.residents.aggregate(pipeline).to_list(100)
+            
+            lines = ["<b>🏢 Учащиеся по этажам:</b>\n"]
+            for stat in floor_stats:
+                lines.append(f"Этаж {stat['_id']}: {stat['count']} чел.")
+            
+            if not floor_stats:
+                lines.append("Нет данных")
+            
             await send_telegram_message(chat_id, "\n".join(lines))
         
     except Exception as e:
