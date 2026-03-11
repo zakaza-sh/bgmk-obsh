@@ -20,17 +20,14 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
 
-    const result = await login(username, password);
-    
-    if (result.success) {
+    try {
+      const response = await axios.post(`${API}/auth/login`, { username, password });
+      const { access_token, user: userData } = response.data;
+      
+      localStorage.setItem('token', access_token);
       toast.success('Успешный вход');
       
-      const response = await axios.get(`${API}/auth/me`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      
-      const userData = response.data;
-      
+      // Redirect based on role
       if (userData.role === 'floor_manager' && userData.floor_number) {
         navigate(`/floor/${userData.floor_number}`);
       } else if (userData.role === 'admin') {
@@ -38,11 +35,14 @@ const Login = () => {
       } else {
         navigate('/');
       }
-    } else {
-      toast.error(result.error);
+      
+      // Reload to update auth state
+      window.location.reload();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Ошибка входа');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
