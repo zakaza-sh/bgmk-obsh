@@ -501,6 +501,36 @@ async def delete_inspection(floor: int, block: int, date: str, current_user: dic
         "inspection_date": {"$regex": f"^{date}"}
     })
     
+
+
+@api_router.get("/blocks/{floor}/{block}/inspection-dates")
+async def get_inspection_dates(floor: int, block: int):
+    """Get all dates when inspections were performed for a block"""
+    try:
+        # Получаем все уникальные даты проверок
+        pipeline = [
+            {"$match": {"floor": floor, "block": block}},
+            {
+                "$group": {
+                    "_id": {
+                        "$dateToString": {
+                            "format": "%Y-%m-%d",
+                            "date": "$inspection_date"
+                        }
+                    }
+                }
+            },
+            {"$sort": {"_id": -1}}
+        ]
+        
+        results = await db.inspections.aggregate(pipeline).to_list(1000)
+        dates = [r['_id'] for r in results]
+        
+        return {"dates": dates}
+    except Exception as e:
+        logger.error(f"Error fetching inspection dates: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Проверки не найдены")
     

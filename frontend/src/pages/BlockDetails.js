@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { API } from '../context/AuthContext';
 import { toast } from 'sonner';
+import InspectionCalendar from '../components/InspectionCalendar';
 
 const BlockDetails = () => {
   const { floor, block } = useParams();
@@ -203,6 +204,19 @@ const BlockDetails = () => {
             </div>
           </div>
         )}
+
+        {/* Inspection Calendar - Show for everyone */}
+        <div className="mx-4 mb-4">
+          <InspectionCalendar
+            floor={parseInt(floor)}
+            block={parseInt(block)}
+            selectedDate={inspectionDate}
+            onDateSelect={(date) => {
+              setInspectionDate(date);
+              // Можно добавить автозагрузку оценок за эту дату
+            }}
+          />
+        </div>
 
         {/* Date Picker - Only for managers */}
         {canRate && (
