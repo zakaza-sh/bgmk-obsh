@@ -304,7 +304,7 @@ const FloorsList = () => {
           {/* Footer */}
           <div className="py-6 text-center">
             <p className="text-xs text-slate-600">
-              © 2024 БГМК • Санитарный контроль
+              © 2026 БГМК • Санитарный контроль
             </p>
           </div>
         </div>
